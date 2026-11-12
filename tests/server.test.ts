@@ -24,6 +24,7 @@ async function apiRequest(path: string, options: { method?: string; headers?: Re
 }
 
 test('Setup RLTSMS Test Server', async () => {
+  dbStore.reset();
   server = await startServer();
   assert.ok(server, 'Server should start successfully');
 });
@@ -38,37 +39,37 @@ test('API Health Check Endpoint returns 200 and enterprise identity', async () =
 test('Authentication: Login with valid credentials succeeds and logs audit event', async () => {
   const { status, data } = await apiRequest('/api/auth/login', {
     method: 'POST',
-    body: { email: 'david.vance@riseuplabs.com', password: 'RiseupLabs@2026' },
+    body: { email: 'wasiur@riseuplabs.com', password: 'RiseupLabs@2026' },
   });
   assert.strictEqual(status, 200);
   assert.ok(data.token, 'Must return session token');
-  assert.strictEqual(data.user.email, 'david.vance@riseuplabs.com');
+  assert.strictEqual(data.user.email, 'wasiur@riseuplabs.com');
   assert.strictEqual(data.user.passwordHash, undefined, 'Password hash must never be returned to client');
 
   // Verify audit event
   const state = dbStore.getState();
-  const loginAudit = state.auditLogs.find((a) => a.action === 'User Login' && a.userId === 'usr-7');
+  const loginAudit = state.auditLogs.find((a) => a.action === 'User Login' && a.userId === 'usr-4');
   assert.ok(loginAudit, 'Must record user login event in audit ledger');
 });
 
 test('Authentication: Login with invalid password fails and is recorded in audit ledger', async () => {
   const { status, data } = await apiRequest('/api/auth/login', {
     method: 'POST',
-    body: { email: 'david.vance@riseuplabs.com', password: 'WrongPassword123' },
+    body: { email: 'wasiur@riseuplabs.com', password: 'WrongPassword123' },
   });
   assert.strictEqual(status, 401);
   assert.ok(data.error.includes('Invalid credentials'));
 
   const state = dbStore.getState();
-  const failedAudit = state.auditLogs.find((a) => a.action === 'Failed Login Attempt' && a.userId === 'usr-7');
+  const failedAudit = state.auditLogs.find((a) => a.action === 'Failed Login Attempt' && a.userId === 'usr-4');
   assert.ok(failedAudit, 'Must record failed login attempt in audit ledger');
 });
 
 test('Mandatory Card Security: Card owner can reveal card after password verification', async () => {
-  // card-1 owner is David Vance (usr-7)
+  // card-1 owner is Wasiur Rahman (usr-4)
   const { status, data } = await apiRequest('/api/cards/card-1/reveal', {
     method: 'POST',
-    headers: { 'x-user-id': 'usr-7' },
+    headers: { 'x-user-id': 'usr-4' },
     body: { password: 'RiseupLabs@2026' },
   });
 
@@ -81,7 +82,7 @@ test('Mandatory Card Security: Card owner can reveal card after password verific
   // Verify successful reveal audit log
   const state = dbStore.getState();
   const revealLog = state.cardRevealLogs.find(
-    (l) => l.cardId === 'card-1' && l.viewerId === 'usr-7' && l.action === 'reveal_masked'
+    (l) => l.cardId === 'card-1' && l.viewerId === 'usr-4' && l.action === 'reveal_masked'
   );
   assert.ok(revealLog, 'Must record successful reveal in card reveal audit ledger');
   assert.strictEqual(revealLog.result, 'Success');
@@ -90,7 +91,7 @@ test('Mandatory Card Security: Card owner can reveal card after password verific
 test('Mandatory Card Security: Card reveal without password verification is denied', async () => {
   const { status, data } = await apiRequest('/api/cards/card-1/reveal', {
     method: 'POST',
-    headers: { 'x-user-id': 'usr-7' },
+    headers: { 'x-user-id': 'usr-4' },
     body: { password: '' }, // No password
   });
 
@@ -101,7 +102,7 @@ test('Mandatory Card Security: Card reveal without password verification is deni
 test('Mandatory Card Security: Invalid password verification is rejected and logged', async () => {
   const { status, data } = await apiRequest('/api/cards/card-1/reveal', {
     method: 'POST',
-    headers: { 'x-user-id': 'usr-7' },
+    headers: { 'x-user-id': 'usr-4' },
     body: { password: 'WrongPasswordXYZ' },
   });
 
@@ -110,14 +111,14 @@ test('Mandatory Card Security: Invalid password verification is rejected and log
 
   const state = dbStore.getState();
   const failedLog = state.cardRevealLogs.find(
-    (l) => l.cardId === 'card-1' && l.viewerId === 'usr-7' && l.action === 'failed_password'
+    (l) => l.cardId === 'card-1' && l.viewerId === 'usr-4' && l.action === 'failed_password'
   );
   assert.ok(failedLog, 'Must record failed password attempt in card reveal logs');
   assert.strictEqual(failedLog.result, 'Denied');
 });
 
 test('Mandatory Card Security: Super Admin does NOT automatically bypass owner visibility restrictions', async () => {
-  // usr-admin is Super Admin, but card-1 owner is David Vance (usr-7).
+  // usr-admin is Super Admin, but card-1 owner is Wasiur Rahman (usr-4).
   // Admin is not in authorizedUserIds of card-1 unless granted by owner!
   const { status, data } = await apiRequest('/api/cards/card-1/reveal', {
     method: 'POST',
@@ -137,10 +138,10 @@ test('Mandatory Card Security: Super Admin does NOT automatically bypass owner v
 });
 
 test('Mandatory Card Security: Card owner can grant visibility and authorized user can then reveal', async () => {
-  // 1. David Vance (usr-7) grants visibility on card-1 to Sarah Lin (usr-1)
+  // 1. Wasiur Rahman (usr-4) grants visibility on card-1 to Sarah Lin (usr-1)
   const grantRes = await apiRequest('/api/cards/card-1/visibility', {
     method: 'POST',
-    headers: { 'x-user-id': 'usr-7' },
+    headers: { 'x-user-id': 'usr-4' },
     body: { targetUserId: 'usr-1', action: 'grant' },
   });
   assert.strictEqual(grantRes.status, 200);
@@ -155,7 +156,7 @@ test('Mandatory Card Security: Card owner can grant visibility and authorized us
   assert.strictEqual(revealRes.status, 200);
   assert.strictEqual(revealRes.data.revealed.lastFour, '8492');
 
-  // 3. Sarah Lin cannot reveal card-3 (owned by Michael Chang)
+  // 3. Sarah Lin cannot reveal card-3 (owned by Kazi Fahim usr-5)
   const card3Res = await apiRequest('/api/cards/card-3/reveal', {
     method: 'POST',
     headers: { 'x-user-id': 'usr-1' },
@@ -163,10 +164,10 @@ test('Mandatory Card Security: Card owner can grant visibility and authorized us
   });
   assert.strictEqual(card3Res.status, 403, 'Password verification does not unlock other cards');
 
-  // 4. David Vance revokes visibility from Sarah Lin
+  // 4. Wasiur Rahman revokes visibility from Sarah Lin
   const revokeRes = await apiRequest('/api/cards/card-1/visibility', {
     method: 'POST',
-    headers: { 'x-user-id': 'usr-7' },
+    headers: { 'x-user-id': 'usr-4' },
     body: { targetUserId: 'usr-1', action: 'revoke' },
   });
   assert.strictEqual(revokeRes.status, 200);
@@ -182,18 +183,18 @@ test('Mandatory Card Security: Card owner can grant visibility and authorized us
 });
 
 test('Mandatory Card Security: Non-owner cannot grant visibility to others', async () => {
-  // Michael Chang (usr-5) tries to grant access to card-1 (owned by David Vance)
+  // Sarah Lin (usr-1) tries to grant access to card-1 (owned by Wasiur Rahman)
   const { status, data } = await apiRequest('/api/cards/card-1/visibility', {
     method: 'POST',
-    headers: { 'x-user-id': 'usr-5' },
-    body: { targetUserId: 'usr-2', action: 'grant' },
+    headers: { 'x-user-id': 'usr-1' },
+    body: { targetUserId: 'usr-5', action: 'grant' },
   });
   assert.strictEqual(status, 403);
   assert.ok(data.error.includes('Only the registered card owner'));
 });
 
 test('Mandatory Access Sharing: Zero-Credential assignment creation, extension and revocation', async () => {
-  // 1. Create access assignment for Alex Rivera on ChatGPT Plus
+  // 1. Create access assignment for Sarah Lin on ChatGPT Plus
   const createRes = await apiRequest('/api/access/assignments', {
     method: 'POST',
     headers: { 'x-user-id': 'usr-admin' },
@@ -201,7 +202,7 @@ test('Mandatory Access Sharing: Zero-Credential assignment creation, extension a
       serviceId: 'srv-1',
       accountId: 'acc-1',
       recipientType: 'employee',
-      recipientId: 'usr-2',
+      recipientId: 'usr-1',
       startDate: '2026-11-15',
       expirationDate: '2026-12-15',
       permissionLevel: 'user',
@@ -212,8 +213,8 @@ test('Mandatory Access Sharing: Zero-Credential assignment creation, extension a
   assert.strictEqual(createRes.status, 201);
   const assignment = createRes.data;
   assert.strictEqual(assignment.status, 'Active');
-  assert.strictEqual(assignment.recipientId, 'usr-2');
-  assert.strictEqual(assignment.recipientName, 'Alex Rivera');
+  assert.strictEqual(assignment.recipientId, 'usr-1');
+  assert.strictEqual(assignment.recipientName, 'Sarah Lin');
 
   // Verify that zero credentials (password, recovery email) exist in the assignment
   assert.strictEqual((assignment as any).password, undefined, 'Must not store service password');
@@ -290,6 +291,159 @@ test('Reports & Financials: Summary calculation and sanitized CSV export', async
   const csvText = await csvRes.text();
   assert.ok(csvText.includes('Purchase ID'));
   assert.ok(!csvText.includes('•••• •••• •••• 8492')); // Must never expose full card digits
+});
+
+test('Initial Database Setup: Exactly five foundational accounts and zero fake demo users', async () => {
+  const res = await apiRequest('/api/org/users');
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.data.length, 5, 'Must contain exactly 5 initial production setup accounts');
+
+  const emails = res.data.map((u: any) => u.email);
+  assert.ok(emails.includes('nahian@riseuplabs.com'), 'Super Admin account must exist');
+  assert.ok(emails.includes('wasiur@riseuplabs.com'), 'Operations Manager account must exist');
+  assert.ok(emails.includes('tariq.ahmed@riseuplabs.com'), 'Department Lead account must exist');
+  assert.ok(emails.includes('kazi.fahim@riseuplabs.com'), 'Purchaser account must exist');
+  assert.ok(emails.includes('sarah.lin@riseuplabs.com'), 'Employee account must exist');
+});
+
+test('Role & Permissions Setup: All 10 RLTSMS system roles are defined in store', async () => {
+  const res = await apiRequest('/api/org/roles');
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(res.data.length, 10, 'All 10 required system roles must be initialized');
+
+  const roleNames = res.data.map((r: any) => r.name);
+  assert.ok(roleNames.includes('Super Admin'));
+  assert.ok(roleNames.includes('System Admin'));
+  assert.ok(roleNames.includes('Employee'));
+  assert.ok(roleNames.includes('Team Lead'));
+  assert.ok(roleNames.includes('Department Lead'));
+  assert.ok(roleNames.includes('Operation Manager'));
+  assert.ok(roleNames.includes('Purchaser'));
+  assert.ok(roleNames.includes('Finance'));
+  assert.ok(roleNames.includes('Management'));
+  assert.ok(roleNames.includes('Card Information Viewer'));
+});
+
+test('Predefined Access Reasons: Super Admin CRUD operations', async () => {
+  // 1. List predefined reasons
+  const listRes = await apiRequest('/api/access/reasons');
+  assert.strictEqual(listRes.status, 200);
+  assert.ok(listRes.data.length >= 10, 'Must have predefined reasons seeded');
+
+  // 2. Create custom reason
+  const createRes = await apiRequest('/api/access/reasons', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Security Vulnerability Patching',
+      description: 'Dedicated access for urgent CVE remediation sprint',
+      displayOrder: 20,
+    },
+  });
+  assert.strictEqual(createRes.status, 201);
+  const createdReason = createRes.data;
+  assert.strictEqual(createdReason.name, 'Security Vulnerability Patching');
+
+  // 3. Update reason
+  const updateRes = await apiRequest(`/api/access/reasons/${createdReason.id}`, {
+    method: 'PUT',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Security Vulnerability Patching (High Priority)',
+      displayOrder: 2,
+    },
+  });
+  assert.strictEqual(updateRes.status, 200);
+
+  // 4. Archive reason (safe archive without deleting historical references)
+  const deleteRes = await apiRequest(`/api/access/reasons/${createdReason.id}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(deleteRes.status, 200);
+});
+
+test('Employee Access Request & Streamlined 1-Click Approve and Assign Flow', async () => {
+  // 1. Kazi Fahim submits access request for ChatGPT Team
+  const reqRes = await apiRequest('/api/access/requests', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-5' },
+    body: {
+      serviceId: 'srv-1',
+      requestedAccessType: 'Shared Team Seat',
+      reasonId: 'rsn-1',
+      reason: 'Project Requirement',
+      additionalExplanation: 'Procurement portal integration AI prompt verification',
+      duration: 'Project-based (3 Months)',
+    },
+  });
+  assert.strictEqual(reqRes.status, 201);
+  const accessReq = reqRes.data;
+  assert.strictEqual(accessReq.status, 'Pending');
+  assert.strictEqual(accessReq.requesterId, 'usr-5');
+
+  // 2. Admin executes 1-click Approve & Assign on acc-1
+  const approveRes = await apiRequest(`/api/access/requests/${accessReq.id}/approve-and-assign`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      accountId: 'acc-1',
+      startDate: '2026-11-15',
+      expirationDate: '2027-02-15',
+      permissionLevel: 'user',
+      notes: '1-click approval authorized by Super Admin',
+    },
+  });
+
+  assert.strictEqual(approveRes.status, 200);
+  assert.strictEqual(approveRes.data.success, true);
+  assert.strictEqual(approveRes.data.assignment.status, 'Active');
+
+  // 3. Verify request is now marked Fulfilled
+  const checkReq = await apiRequest(`/api/access/requests/${accessReq.id}`);
+  assert.strictEqual(checkReq.status, 200);
+  assert.strictEqual(checkReq.data.status, 'Fulfilled');
+  assert.strictEqual(checkReq.data.assignedAccountId, 'acc-1');
+
+  // 4. Verify historical record was created in account_access_history
+  const histRes = await apiRequest(`/api/access/assignments/${approveRes.data.assignment.id}/history`);
+  assert.strictEqual(histRes.status, 200);
+  assert.ok(histRes.data.length >= 1);
+  assert.strictEqual(histRes.data[0].action, 'grant');
+});
+
+test('Centralized Sharing Hub: Hierarchical 3-Tier Endpoints and Upcoming Events', async () => {
+  // Tier 1: Master services overview with sharing metrics
+  const tier1Res = await apiRequest('/api/access/sharing/services');
+  assert.strictEqual(tier1Res.status, 200);
+  assert.ok(Array.isArray(tier1Res.data));
+  assert.ok(tier1Res.data.length > 0);
+  const svc0 = tier1Res.data[0];
+  assert.ok('totalAccounts' in svc0);
+  assert.ok('activeAccounts' in svc0);
+  assert.ok('allocationStatus' in svc0);
+
+  // Tier 2: Accounts under specific service
+  const tier2Res = await apiRequest(`/api/access/sharing/services/${svc0.id}/accounts`);
+  assert.strictEqual(tier2Res.status, 200);
+  assert.ok(Array.isArray(tier2Res.data));
+
+  // Tier 3: Assignments under specific account
+  const tier3Res = await apiRequest('/api/access/sharing/accounts/acc-1/assignments');
+  assert.strictEqual(tier3Res.status, 200);
+  assert.ok(Array.isArray(tier3Res.data.assignments));
+  assert.ok('account' in tier3Res.data);
+
+  // Upcoming Events Monitor (distinguishing subscriptions vs access grants)
+  const eventsRes = await apiRequest('/api/access/upcoming-events?timeframe=30');
+  assert.strictEqual(eventsRes.status, 200);
+  assert.ok(Array.isArray(eventsRes.data));
+  eventsRes.data.forEach((evt: any) => {
+    assert.ok(
+      evt.type === 'Subscription Renewal' || evt.type === 'Access Expiration',
+      'Event must clearly distinguish Subscription vs Access Expiration'
+    );
+  });
 });
 
 test('Teardown RLTSMS Test Server', async () => {

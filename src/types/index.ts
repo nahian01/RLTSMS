@@ -27,12 +27,41 @@ export interface User {
   departmentName: string;
   teamId?: string;
   teamName?: string;
+  reportingLeadId?: string;
+  reportingLeadName?: string;
   roles: UserRole[];
   accountStatus: 'Active' | 'Pending Invitation' | 'Expired Invitation' | 'Inactive';
   invitationSentAt?: string;
   invitationExpiresAt?: string;
   cardPermissionLevel?: CardPermissionLevel;
   avatar?: string;
+}
+
+export interface RoleDefinition {
+  id: string;
+  name: UserRole;
+  description: string;
+  isSystem: boolean;
+  permissions: string[];
+}
+
+export interface PermissionDefinition {
+  id: string;
+  code: string;
+  name: string;
+  module: string;
+  description: string;
+}
+
+export interface PredefinedAccessReason {
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  isEnabled: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Department {
@@ -203,9 +232,13 @@ export interface PurchaseRecord {
 }
 
 export type AccessRequestStatus =
-  | 'Pending Approval'
+  | 'Pending'
+  | 'Under Review'
   | 'Approved'
   | 'Rejected'
+  | 'Fulfilled'
+  | 'Cancelled'
+  | 'Pending Approval'
   | 'Returned for Modification'
   | 'Revoked';
 
@@ -223,8 +256,11 @@ export interface AccessRequest {
   serviceName: string;
   serviceCategory?: string;
   category?: string;
+  requestedAccessType?: string; // e.g. 'Standard Seat', 'Admin Seat', 'API Key'
   reason: string;
-  duration: 'Permanent' | 'Project-based (3 Months)' | 'Project-based (6 Months)' | 'Temporary (1 Month)';
+  reasonId?: string;
+  additionalExplanation?: string;
+  duration: 'Permanent' | 'Project-based (3 Months)' | 'Project-based (6 Months)' | 'Temporary (1 Month)' | string;
   preferredAccountId?: string;
   preferredAccountEmail?: string;
   status: AccessRequestStatus;
@@ -241,9 +277,21 @@ export interface AccessRequest {
   accessGrantedByName?: string;
   accessNotes?: string;
 
+  reviewedById?: string;
+  reviewedByName?: string;
+  approvalDate?: string;
+
   createdAt: string;
   updatedAt: string;
 }
+
+export type AccountAllocationModel =
+  | 'single_user'
+  | 'multiple_user'
+  | 'seat_based'
+  | 'team_based'
+  | 'department_based'
+  | 'shared_internal';
 
 export interface ServiceAccount {
   id: string;
@@ -253,6 +301,9 @@ export interface ServiceAccount {
   planName: string;
   planTier?: string;
   assignmentType?: string;
+  allocationModel?: AccountAllocationModel;
+  seatLimit?: number; // total defined capacity
+  allocatedSeats?: number; // active allocated seats
   purchaseDate: string;
   purchaseAmount: number;
   currency: 'USD' | 'BDT' | 'EUR' | 'GBP';
@@ -263,13 +314,32 @@ export interface ServiceAccount {
   vendorId?: string;
   vendorName?: string;
   paymentCardId?: string;
-  accountStatus: 'Active' | 'Inactive' | 'Suspended' | 'Expired' | 'Cancelled';
+  accountStatus: 'Available' | 'Assigned' | 'Partially Assigned' | 'Active' | 'Inactive' | 'Suspended' | 'Expired' | 'Cancelled';
   paymentStatus: 'Paid' | 'Upcoming' | 'Overdue' | 'One-Time Settled';
   linkedPurchaseId?: string;
   assignedUserId?: string;
   assignedUserName?: string;
   sharedUserIds?: string[];
   sharedUserNames?: string[];
+}
+
+export interface AccountAccessHistory {
+  id: string;
+  assignmentId: string;
+  serviceId: string;
+  serviceName: string;
+  accountId: string;
+  accountEmail: string;
+  recipientId: string;
+  recipientName: string;
+  recipientType: RecipientType;
+  action: 'grant' | 'edit' | 'extend' | 'revoke';
+  previousExpiryDate?: string;
+  newExpiryDate?: string;
+  actorId: string;
+  actorName: string;
+  reasonOrNotes?: string;
+  timestamp: string;
 }
 
 export interface Subscription {
@@ -349,6 +419,10 @@ export interface AccountAccessAssignment {
   recipientId: string;
   recipientName: string;
   recipientEmail?: string;
+  departmentId?: string;
+  departmentName?: string;
+  teamId?: string;
+  teamName?: string;
   grantedById: string;
   grantedByName: string;
   startDate: string;

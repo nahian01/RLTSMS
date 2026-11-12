@@ -10,8 +10,12 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { RequisitionsView } from './components/requisitions/RequisitionsView';
 import { ServicesCatalogueView } from './components/services/ServicesCatalogueView';
 import { AccountsView } from './components/accounts/AccountsView';
+import { AccessManagementView } from './components/access/AccessManagementView';
+import { ServiceSharingHubView } from './components/sharing/ServiceSharingHubView';
+import { ApprovalsView } from './components/approvals/ApprovalsView';
 import { SubscriptionsView } from './components/subscriptions/SubscriptionsView';
 import { PurchasesView } from './components/purchases/PurchasesView';
+import { ExpensesView } from './components/expenses/ExpensesView';
 import { VendorsView } from './components/vendors/VendorsView';
 import { PaymentCardsView } from './components/cards/PaymentCardsView';
 import { OrganizationView } from './components/organization/OrganizationView';
@@ -33,14 +37,22 @@ const MainLayout: React.FC = () => {
         return <DashboardView />;
       case 'requisitions':
         return <RequisitionsView />;
+      case 'approvals':
+        return <ApprovalsView />;
       case 'services':
         return <ServicesCatalogueView />;
       case 'accounts':
         return <AccountsView />;
+      case 'access':
+      case 'sharing':
+        return <ServiceSharingHubView />;
       case 'subscriptions':
         return <SubscriptionsView />;
+      case 'procurement':
       case 'purchases':
         return <PurchasesView />;
+      case 'expenses':
+        return <ExpensesView />;
       case 'vendors':
         return <VendorsView />;
       case 'cards':

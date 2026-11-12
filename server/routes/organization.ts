@@ -1,20 +1,35 @@
 import { Router, Request, Response } from 'express';
 import { dbStore, hashPassword } from '../data/store';
-import { Department, Team, User } from '../../src/types';
+import { Department, Team, User, RoleDefinition } from '../../src/types';
 
 export const orgRouter = Router();
 
 // GET /api/org/users
-orgRouter.get('/users', (req: Request, res: Response) => {
+orgRouter.get('/users', (_req: Request, res: Response) => {
   const state = dbStore.getState();
   const safeUsers = state.users.map(({ passwordHash, ...u }) => u);
   return res.json(safeUsers);
 });
 
-// POST /api/org/users - Invite employee (Minimal enterprise schema)
+// GET /api/org/roles - List system roles and definitions (Part 2.1)
+orgRouter.get('/roles', (_req: Request, res: Response) => {
+  const state = dbStore.getState();
+  return res.json(state.roles || []);
+});
+
+// POST /api/org/users - Add employee later (Part 2.2)
 orgRouter.post('/users', (req: Request, res: Response) => {
   const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
-  const { name, email, phone, designation, departmentId, teamId, roles = ['Employee'] } = req.body;
+  const {
+    name,
+    email,
+    phone,
+    designation,
+    departmentId,
+    teamId,
+    reportingLeadId,
+    roles = ['Employee'],
+  } = req.body;
 
   if (!name || !email || !designation || !departmentId) {
     return res.status(400).json({ error: 'Name, email, designation, and departmentId are required.' });
@@ -28,6 +43,7 @@ orgRouter.post('/users', (req: Request, res: Response) => {
 
   const dept = state.departments.find((d) => d.id === departmentId);
   const team = teamId ? state.teams.find((t) => t.id === teamId) : undefined;
+  const lead = reportingLeadId ? state.users.find((u) => u.id === reportingLeadId) : undefined;
   const currentUser = state.users.find((u) => u.id === currentUserId);
 
   const newUser: User = {
@@ -40,6 +56,8 @@ orgRouter.post('/users', (req: Request, res: Response) => {
     departmentName: dept ? dept.name : 'Engineering',
     teamId,
     teamName: team ? team.name : undefined,
+    reportingLeadId: lead ? lead.id : undefined,
+    reportingLeadName: lead ? lead.name : undefined,
     roles,
     accountStatus: 'Pending Invitation',
     invitationSentAt: new Date().toISOString(),
@@ -52,7 +70,7 @@ orgRouter.post('/users', (req: Request, res: Response) => {
   dbStore.mutate((s) => {
     s.users.push({ ...newUser, passwordHash: tempPass });
 
-    // Log invitation email dispatch
+    // Log invitation email dispatch with 48h activation link
     s.emailLogs.unshift({
       id: `elog-${Date.now()}`,
       templateKey: 'employee_invitation',
@@ -70,24 +88,63 @@ orgRouter.post('/users', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       userId: currentUserId,
       userName: currentUser ? currentUser.name : 'System Admin',
-      action: 'Invite Employee',
+      action: 'Add Employee Account',
       entity: 'Organization',
       entityId: newUser.id,
-      details: `Invited new employee ${newUser.name} (${newUser.email}) to ${newUser.departmentName}.`,
+      details: `Added new employee ${newUser.name} (${newUser.email}) to ${newUser.departmentName}. Reporting to ${lead?.name || 'Department Head'}.`,
     });
   });
 
   return res.status(201).json(newUser);
 });
 
+// PUT /api/org/setup-five-users - Initial setup configuration for foundational 5 accounts (Part 2)
+orgRouter.put('/setup-five-users', (req: Request, res: Response) => {
+  const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
+  const { initialUsers } = req.body;
+
+  if (!Array.isArray(initialUsers) || initialUsers.length !== 5) {
+    return res.status(400).json({ error: 'Exactly five initial user accounts must be provided for initial system setup.' });
+  }
+
+  const state = dbStore.getState();
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+
+  dbStore.mutate((s) => {
+    // Preserve existing password hashes if matching
+    const updatedUsers = initialUsers.map((u: User) => {
+      const prev = s.users.find((x) => x.id === u.id || x.email.toLowerCase() === u.email.toLowerCase());
+      return {
+        ...u,
+        passwordHash: prev ? prev.passwordHash : hashPassword('RiseupLabs@2026'),
+      };
+    });
+
+    s.users = updatedUsers;
+
+    s.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: currentUserId,
+      userName: currentUser ? currentUser.name : 'Super Administrator',
+      action: 'Configure Initial Five Accounts',
+      entity: 'Organization',
+      entityId: 'init-setup',
+      details: 'Configured the foundational five initial production accounts for Riseup Labs operational setup.',
+    });
+  });
+
+  return res.json({ success: true, message: 'Five initial accounts configured successfully.' });
+});
+
 // GET /api/org/departments
-orgRouter.get('/departments', (req: Request, res: Response) => {
+orgRouter.get('/departments', (_req: Request, res: Response) => {
   const state = dbStore.getState();
   return res.json(state.departments);
 });
 
 // GET /api/org/teams
-orgRouter.get('/teams', (req: Request, res: Response) => {
+orgRouter.get('/teams', (_req: Request, res: Response) => {
   const state = dbStore.getState();
   return res.json(state.teams);
 });

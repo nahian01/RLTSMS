@@ -86,15 +86,20 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const navigationItems = [
     { label: 'Dashboard Overview', icon: ArrowRight, view: 'dashboard' },
-    { label: 'All Purchase Requisitions', icon: FileText, view: 'requisitions' },
     { label: 'Services & Tools Catalogue', icon: Package, view: 'services' },
-    { label: 'Purchased Accounts Inventory', icon: Users, view: 'accounts' },
+    { label: 'Purchased Accounts & Licenses', icon: Users, view: 'accounts' },
+    { label: 'Access Management (Zero-Credential)', icon: Users, view: 'access' },
+    { label: 'Purchase Requisitions', icon: FileText, view: 'requisitions' },
+    { label: 'Pending Approvals Queue', icon: FileText, view: 'approvals' },
+    { label: 'Procurement & Purchasing', icon: CreditCard, view: 'procurement' },
     { label: 'Subscriptions & Renewals', icon: FileText, view: 'subscriptions' },
-    { label: 'Purchases & Procurement', icon: CreditCard, view: 'purchases' },
-    { label: 'Approval Workflow Builder', icon: Workflow, view: 'workflows' },
+    { label: 'Expenses & Spend Analytics', icon: CreditCard, view: 'expenses' },
     { label: 'Restricted Payment Cards', icon: CreditCard, view: 'cards' },
-    { label: 'Organization & Employees', icon: Building2, view: 'organization' },
     { label: 'Expenditure Reports', icon: FileText, view: 'reports' },
+    { label: 'Approval Workflow Builder', icon: Workflow, view: 'workflows' },
+    { label: 'Organization & Employees', icon: Building2, view: 'organization' },
+    { label: 'System Audit Logs', icon: FileText, view: 'audit' },
+    { label: 'Settings & Email Templates', icon: ArrowRight, view: 'settings' },
   ].filter((item) => item.label.toLowerCase().includes(trimmed));
 
   const handleSelectView = (view: string, id?: string) => {

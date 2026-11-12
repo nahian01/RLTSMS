@@ -22,6 +22,9 @@ import {
   INITIAL_ACCESS_ASSIGNMENTS,
   INITIAL_EMAIL_TEMPLATES,
   INITIAL_EMAIL_LOGS,
+  INITIAL_PREDEFINED_REASONS,
+  INITIAL_ACCESS_HISTORY,
+  INITIAL_ROLES,
 } from '../../src/data/mockData';
 import {
   User,
@@ -43,6 +46,9 @@ import {
   AuditLog,
   AccessRequest,
   AccountAccessAssignment,
+  AccountAccessHistory,
+  PredefinedAccessReason,
+  RoleDefinition,
   EmailTemplate,
   EmailDeliveryLog,
 } from '../../src/types';
@@ -74,6 +80,7 @@ export interface ServerState {
   users: ServerUser[];
   departments: Department[];
   teams: Team[];
+  roles: RoleDefinition[];
   categories: ServiceCategory[];
   services: CatalogueService[];
   accounts: ServiceAccount[];
@@ -88,6 +95,8 @@ export interface ServerState {
   purchases: PurchaseRecord[];
   accessRequests: AccessRequest[];
   accessAssignments: AccountAccessAssignment[];
+  accessHistory: AccountAccessHistory[];
+  predefinedReasons: PredefinedAccessReason[];
   emailTemplates: EmailTemplate[];
   emailLogs: EmailDeliveryLog[];
   notifications: AppNotification[];
@@ -110,6 +119,7 @@ function createDefaultState(): ServerState {
     users: usersWithHash,
     departments: INITIAL_DEPARTMENTS,
     teams: INITIAL_TEAMS,
+    roles: INITIAL_ROLES,
     categories: INITIAL_CATEGORIES,
     services: INITIAL_SERVICES,
     accounts: INITIAL_ACCOUNTS,
@@ -124,6 +134,8 @@ function createDefaultState(): ServerState {
     purchases: INITIAL_PURCHASES,
     accessRequests: INITIAL_ACCESS_REQUESTS,
     accessAssignments: INITIAL_ACCESS_ASSIGNMENTS,
+    accessHistory: INITIAL_ACCESS_HISTORY,
+    predefinedReasons: INITIAL_PREDEFINED_REASONS,
     emailTemplates: INITIAL_EMAIL_TEMPLATES,
     emailLogs: INITIAL_EMAIL_LOGS,
     notifications: INITIAL_NOTIFICATIONS,
@@ -152,41 +164,61 @@ class Store {
       }
       if (fs.existsSync(STORE_PATH)) {
         const raw = fs.readFileSync(STORE_PATH, 'utf8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        // Ensure new entities are populated if missing in legacy store.json
+        if (!parsed.predefinedReasons || parsed.predefinedReasons.length === 0) {
+          parsed.predefinedReasons = INITIAL_PREDEFINED_REASONS;
+        }
+        if (!parsed.accessHistory) {
+          parsed.accessHistory = INITIAL_ACCESS_HISTORY;
+        }
+        if (!parsed.roles) {
+          parsed.roles = INITIAL_ROLES;
+        }
+        if (!parsed.users || parsed.users.length !== 5) {
+          parsed.users = INITIAL_USERS.map((u) => ({
+            ...u,
+            passwordHash: DEFAULT_PASS_HASH,
+          }));
+        }
+        return parsed;
       }
     } catch (e: any) {
       console.warn('[Store] Could not read store.json, creating initial state.', e.message);
     }
     const def = createDefaultState();
-    this.save(def);
+    this.persist(def);
     return def;
-  }
-
-  private save(data?: ServerState): void {
-    try {
-      if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-      }
-      fs.writeFileSync(STORE_PATH, JSON.stringify(data || this.state, null, 2), 'utf8');
-    } catch (e: any) {
-      console.error('[Store] Failed to save store.json:', e.message);
-    }
   }
 
   public getState(): ServerState {
     return this.state;
   }
 
-  public mutate<T>(fn: (state: ServerState) => T): T {
-    const result = fn(this.state);
+  public mutate(fn: (state: ServerState) => void): ServerState {
+    fn(this.state);
     this.save();
-    return result;
+    return this.state;
   }
 
-  public reset(): void {
+  public save(): void {
+    this.persist(this.state);
+  }
+
+  private persist(data: ServerState): void {
+    try {
+      fs.writeFileSync(STORE_PATH, JSON.stringify(data, null, 2), 'utf8');
+    } catch (err) {
+      console.error('[Store] Failed to persist store to disk', err);
+    }
+  }
+
+  public reset(): ServerState {
     this.state = createDefaultState();
     this.save();
+    return this.state;
   }
 }
 
-export const dbStore = new Store();
+export const store = new Store();
+export const dbStore = store;

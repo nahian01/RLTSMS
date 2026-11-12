@@ -23,15 +23,30 @@ export const NewAccessRequestModal: React.FC<NewAccessRequestModalProps> = ({
   onClose,
   initialServiceId,
 }) => {
-  const { services, accounts, currentUser, workflows, createAccessRequest } = useApp();
+  const { services, accounts, currentUser, workflows, predefinedReasons, createAccessRequest } = useApp();
 
   const [serviceId, setServiceId] = useState<string>(initialServiceId || (services[0]?.id || ''));
   const [preferredAccountId, setPreferredAccountId] = useState<string>('');
-  const [reason, setReason] = useState('');
+  const [requestedAccessType, setRequestedAccessType] = useState<string>('Standard User Seat');
+  const [selectedReasonId, setSelectedReasonId] = useState<string>('');
+  const [customReasonText, setCustomReasonText] = useState('');
+  const [additionalExplanation, setAdditionalExplanation] = useState('');
   const [duration, setDuration] = useState<
     'Permanent' | 'Project-based (3 Months)' | 'Project-based (6 Months)' | 'Temporary (1 Month)'
   >('Project-based (3 Months)');
   const [error, setError] = useState('');
+
+  // Active predefined reasons sorted by displayOrder
+  const enabledReasons = (predefinedReasons || [])
+    .filter((r) => r.isEnabled)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+
+  // Set default selectedReasonId when reasons are available
+  React.useEffect(() => {
+    if (!selectedReasonId && enabledReasons.length > 0) {
+      setSelectedReasonId(enabledReasons[0].id);
+    }
+  }, [enabledReasons, selectedReasonId]);
 
   // Update serviceId when initialServiceId changes
   React.useEffect(() => {
@@ -53,26 +68,43 @@ export const NewAccessRequestModal: React.FC<NewAccessRequestModalProps> = ({
     workflows.find((w) => w.purpose === 'Access-sharing requests') ||
     workflows[0];
 
+  const selectedReasonObj = enabledReasons.find((r) => r.id === selectedReasonId);
+  const isOtherReason = selectedReasonObj?.name.toLowerCase() === 'other';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!serviceId) {
       setError('Please select a service or tool.');
       return;
     }
-    if (!reason.trim()) {
-      setError('Please provide a business justification for requiring access.');
+
+    const effectiveReasonName = isOtherReason
+      ? customReasonText.trim()
+      : selectedReasonObj?.name || 'Business Requirement';
+
+    if (!effectiveReasonName) {
+      setError('Please select or specify a reason for requiring access.');
+      return;
+    }
+
+    if (isOtherReason && !customReasonText.trim()) {
+      setError('Please explain your reason under "Specify Reason".');
       return;
     }
 
     createAccessRequest({
       serviceId,
-      reason: reason.trim(),
+      requestedAccessType,
+      reasonId: selectedReasonId || undefined,
+      reason: effectiveReasonName,
+      additionalExplanation: additionalExplanation.trim() || undefined,
       duration,
       preferredAccountId: preferredAccountId || undefined,
     });
 
     onClose();
-    setReason('');
+    setCustomReasonText('');
+    setAdditionalExplanation('');
     setPreferredAccountId('');
     setError('');
   };
@@ -140,7 +172,7 @@ export const NewAccessRequestModal: React.FC<NewAccessRequestModalProps> = ({
             </div>
           </div>
 
-          {/* Service Selection */}
+          {/* Target Tool or Service Selection */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Target Tool or Service <span className="text-rose-500">*</span>
@@ -160,6 +192,75 @@ export const NewAccessRequestModal: React.FC<NewAccessRequestModalProps> = ({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Requested Access Type */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Requested Access Type <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={requestedAccessType}
+              onChange={(e) => setRequestedAccessType(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+              required
+            >
+              <option value="Standard User Seat">Standard User Seat (Shared License / Team Member)</option>
+              <option value="Full Dedicated Account">Full Dedicated Account (Individual Credentials Managed)</option>
+              <option value="Administrator Access">Administrator / Project Owner Access</option>
+              <option value="Viewer / Read-Only">Viewer / Read-Only / Auditor</option>
+              <option value="API / Developer Key">API / Developer Access / Token</option>
+            </select>
+          </div>
+
+          {/* Predefined Business Reason Selection */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Predefined Business Reason <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={selectedReasonId}
+              onChange={(e) => setSelectedReasonId(e.target.value)}
+              className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+              required
+            >
+              {enabledReasons.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name} {r.description ? `— ${r.description}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Custom reason when "Other" is selected */}
+          {isOtherReason && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Specify Reason <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={customReasonText}
+                onChange={(e) => setCustomReasonText(e.target.value)}
+                placeholder="Specify your specific business reason..."
+                className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+                required
+              />
+            </div>
+          )}
+
+          {/* Additional Business Explanation */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              Additional Explanation & Context (Optional)
+            </label>
+            <textarea
+              rows={2}
+              value={additionalExplanation}
+              onChange={(e) => setAdditionalExplanation(e.target.value)}
+              placeholder="Provide any specific project codes, client requirements, or details to assist the approver..."
+              className="w-full text-xs p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
+            />
           </div>
 
           {/* Available Accounts Summary for selected service */}
@@ -231,20 +332,7 @@ export const NewAccessRequestModal: React.FC<NewAccessRequestModalProps> = ({
             </div>
           </div>
 
-          {/* Business Justification */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Business Purpose & Justification <span className="text-rose-500">*</span>
-            </label>
-            <textarea
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Need ChatGPT Plus shared account for AI prompt evaluations on Project Pegasus sprint deliverables..."
-              className="w-full text-xs p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-sky-500"
-              required
-            />
-          </div>
+
 
           {/* Workflow routing preview */}
           {accessWorkflow && (

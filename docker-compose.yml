@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # ==============================================================================
+  # Database: MySQL 8.4 LTS
+  # ==============================================================================
+  db:
+    image: mysql:8.4
+    container_name: rltsms_mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=caching_sha2_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: rltsms_db
+      MYSQL_USER: rltsms_user
+      MYSQL_PASSWORD: rltsms_production_secret
+      MYSQL_ROOT_PASSWORD: rltsms_root_production_secret
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "rltsms_user", "-prltsms_production_secret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - rltsms_net
+
+  # ==============================================================================
+  # Backend API: Node.js / Express Server
+  # ==============================================================================
+  api:
+    build:
+      context: .
+      target: api
+    container_name: rltsms_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      HOST: 0.0.0.0
+      APP_URL: http://localhost
+      CORS_ORIGIN: http://localhost
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: rltsms_db
+      MYSQL_USER: rltsms_user
+      MYSQL_PASSWORD: rltsms_production_secret
+      JWT_SECRET: rltsms_production_super_secure_jwt_secret_token_key_change_me
+    ports:
+      - "5000:5000"
+    networks:
+      - rltsms_net
+
+  # ==============================================================================
+  # Frontend Web & Reverse Proxy: Nginx
+  # ==============================================================================
+  web:
+    build:
+      context: .
+      target: web
+    container_name: rltsms_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    networks:
+      - rltsms_net
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  rltsms_net:
+    driver: bridge

@@ -1,7 +1,7 @@
 -- ============================================================================
 -- RISEUP LABS TOOLS & SERVICES MANAGEMENT SYSTEM (RLTSMS)
 -- PRODUCTION DATABASE RELATIONAL SCHEMA (MySQL 8.4 LTS)
--- Version: 2.0.0-PROD
+-- Version: 2.1.0-PROD
 -- Target Engine: InnoDB | Character Set: utf8mb4 | Collation: utf8mb4_unicode_ci
 -- ============================================================================
 
@@ -11,7 +11,7 @@ USE `rltsms_db`;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------------------------------------------------------
--- 1. ORGANIZATION & RBAC
+-- 1. DROP EXISTING TABLES FOR CLEAN MIGRATION RUN
 -- ----------------------------------------------------------------------------
 
 DROP TABLE IF EXISTS `card_reveal_logs`;
@@ -29,21 +29,31 @@ DROP TABLE IF EXISTS `approval_actions`;
 DROP TABLE IF EXISTS `requisitions`;
 DROP TABLE IF EXISTS `approval_workflow_stages`;
 DROP TABLE IF EXISTS `approval_workflows`;
+DROP TABLE IF EXISTS `account_access_history`;
 DROP TABLE IF EXISTS `account_access_assignments`;
 DROP TABLE IF EXISTS `access_requests`;
+DROP TABLE IF EXISTS `predefined_access_reasons`;
 DROP TABLE IF EXISTS `service_accounts`;
+DROP TABLE IF EXISTS `service_plans`;
 DROP TABLE IF EXISTS `services`;
 DROP TABLE IF EXISTS `service_categories`;
 DROP TABLE IF EXISTS `vendors`;
 DROP TABLE IF EXISTS `activation_tokens`;
 DROP TABLE IF EXISTS `otp_verifications`;
+DROP TABLE IF EXISTS `role_permissions`;
+DROP TABLE IF EXISTS `permissions`;
 DROP TABLE IF EXISTS `user_roles`;
+DROP TABLE IF EXISTS `roles`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `teams`;
 DROP TABLE IF EXISTS `departments`;
 DROP TABLE IF EXISTS `system_settings`;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ----------------------------------------------------------------------------
+-- 2. ORGANIZATION, USERS & RBAC ROLES (5 INITIAL USERS)
+-- ----------------------------------------------------------------------------
 
 -- Departments
 CREATE TABLE `departments` (
@@ -70,6 +80,34 @@ CREATE TABLE `teams` (
   CONSTRAINT `fk_teams_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
+-- System Roles Definition
+CREATE TABLE `roles` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `name` VARCHAR(100) NOT NULL UNIQUE,
+  `description` TEXT,
+  `is_system` BOOLEAN NOT NULL DEFAULT TRUE,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Granular Permissions
+CREATE TABLE `permissions` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `code` VARCHAR(100) NOT NULL UNIQUE,
+  `name` VARCHAR(150) NOT NULL,
+  `module` VARCHAR(100) NOT NULL,
+  `description` TEXT,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Role-Permissions Junction
+CREATE TABLE `role_permissions` (
+  `role_id` VARCHAR(64) NOT NULL,
+  `permission_id` VARCHAR(64) NOT NULL,
+  PRIMARY KEY (`role_id`, `permission_id`),
+  CONSTRAINT `fk_rp_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_rp_perm` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- Users (Minimal enterprise info: identity, auth, department/team attribution only)
 CREATE TABLE `users` (
   `id` VARCHAR(64) PRIMARY KEY,
@@ -82,6 +120,8 @@ CREATE TABLE `users` (
   `department_name` VARCHAR(150) NOT NULL,
   `team_id` VARCHAR(64) NULL,
   `team_name` VARCHAR(150) NULL,
+  `reporting_lead_id` VARCHAR(64) NULL,
+  `reporting_lead_name` VARCHAR(150) NULL,
   `account_status` ENUM('Active', 'Pending Invitation', 'Expired Invitation', 'Inactive') NOT NULL DEFAULT 'Active',
   `invitation_sent_at` DATETIME NULL,
   `invitation_expires_at` DATETIME NULL,
@@ -132,7 +172,7 @@ CREATE TABLE `otp_verifications` (
 ) ENGINE=InnoDB;
 
 -- ----------------------------------------------------------------------------
--- 2. MASTER SERVICES CATALOGUE & VENDORS
+-- 3. MASTER SERVICES CATALOGUE & VENDORS
 -- ----------------------------------------------------------------------------
 
 CREATE TABLE `service_categories` (
@@ -174,8 +214,23 @@ CREATE TABLE `services` (
   INDEX `idx_services_status` (`status`)
 ) ENGINE=InnoDB;
 
+-- Service Plans / Licenses
+CREATE TABLE `service_plans` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `service_id` VARCHAR(64) NOT NULL,
+  `name` VARCHAR(150) NOT NULL,
+  `tier` VARCHAR(100) NULL,
+  `allocation_model` ENUM('single_user', 'multiple_user', 'seat_based', 'team_based', 'department_based', 'shared_internal') NOT NULL DEFAULT 'seat_based',
+  `seat_limit` INT NULL,
+  `price` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `currency` VARCHAR(10) NOT NULL DEFAULT 'USD',
+  `billing_cycle` VARCHAR(50) NOT NULL DEFAULT 'Monthly',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_plans_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- ----------------------------------------------------------------------------
--- 3. INDIVIDUAL SERVICE ACCOUNTS & LICENSES
+-- 4. INDIVIDUAL SERVICE ACCOUNTS & CAPACITY ENFORCEMENT
 -- ----------------------------------------------------------------------------
 
 CREATE TABLE `service_accounts` (
@@ -184,6 +239,9 @@ CREATE TABLE `service_accounts` (
   `service_name` VARCHAR(200) NOT NULL,
   `account_email` VARCHAR(191) NOT NULL,
   `plan_name` VARCHAR(150) NOT NULL,
+  `allocation_model` ENUM('single_user', 'multiple_user', 'seat_based', 'team_based', 'department_based', 'shared_internal') NOT NULL DEFAULT 'seat_based',
+  `seat_limit` INT NULL,
+  `allocated_seats` INT NOT NULL DEFAULT 0,
   `purchase_date` DATE NOT NULL,
   `purchase_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   `currency` VARCHAR(10) NOT NULL DEFAULT 'USD',
@@ -206,8 +264,56 @@ CREATE TABLE `service_accounts` (
 ) ENGINE=InnoDB;
 
 -- ----------------------------------------------------------------------------
--- 4. ACCOUNT ACCESS MANAGEMENT (ZERO CREDENTIAL SHARING)
+-- 5. PREDEFINED REASONS, ACCESS REQUESTS & CENTRALIZED SHARING HUB
 -- ----------------------------------------------------------------------------
+
+CREATE TABLE `predefined_access_reasons` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `name` VARCHAR(150) NOT NULL UNIQUE,
+  `description` TEXT,
+  `display_order` INT NOT NULL DEFAULT 0,
+  `is_enabled` BOOLEAN NOT NULL DEFAULT TRUE,
+  `is_archived` BOOLEAN NOT NULL DEFAULT FALSE,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_reasons_enabled` (`is_enabled`, `display_order`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `access_requests` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `request_number` VARCHAR(50) NOT NULL UNIQUE,
+  `requester_id` VARCHAR(64) NOT NULL,
+  `requester_name` VARCHAR(150) NOT NULL,
+  `requester_email` VARCHAR(191) NOT NULL,
+  `department_id` VARCHAR(64) NOT NULL,
+  `department_name` VARCHAR(150) NOT NULL,
+  `team_id` VARCHAR(64) NULL,
+  `team_name` VARCHAR(150) NULL,
+  `service_id` VARCHAR(64) NOT NULL,
+  `service_name` VARCHAR(200) NOT NULL,
+  `requested_access_type` VARCHAR(100) NOT NULL DEFAULT 'Standard Seat',
+  `reason_id` VARCHAR(64) NULL,
+  `reason` VARCHAR(255) NOT NULL,
+  `additional_explanation` TEXT NULL,
+  `duration` VARCHAR(100) NOT NULL DEFAULT 'Permanent',
+  `status` ENUM('Pending', 'Under Review', 'Approved', 'Rejected', 'Fulfilled', 'Cancelled', 'Pending Approval', 'Returned for Modification', 'Revoked') NOT NULL DEFAULT 'Pending',
+  `workflow_id` VARCHAR(64) NOT NULL,
+  `current_stage_index` INT NOT NULL DEFAULT 0,
+  `assigned_account_id` VARCHAR(64) NULL,
+  `assigned_account_email` VARCHAR(191) NULL,
+  `assigned_plan_name` VARCHAR(150) NULL,
+  `access_granted_date` DATETIME NULL,
+  `access_granted_by_id` VARCHAR(64) NULL,
+  `access_granted_by_name` VARCHAR(150) NULL,
+  `access_notes` TEXT NULL,
+  `reviewed_by_id` VARCHAR(64) NULL,
+  `reviewed_by_name` VARCHAR(150) NULL,
+  `approval_date` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_accreq_status` (`status`),
+  INDEX `idx_accreq_service` (`service_id`)
+) ENGINE=InnoDB;
 
 CREATE TABLE `account_access_assignments` (
   `id` VARCHAR(64) PRIMARY KEY,
@@ -237,36 +343,29 @@ CREATE TABLE `account_access_assignments` (
   CONSTRAINT `fk_asgn_account` FOREIGN KEY (`account_id`) REFERENCES `service_accounts` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-CREATE TABLE `access_requests` (
+CREATE TABLE `account_access_history` (
   `id` VARCHAR(64) PRIMARY KEY,
-  `request_number` VARCHAR(50) NOT NULL UNIQUE,
-  `requester_id` VARCHAR(64) NOT NULL,
-  `requester_name` VARCHAR(150) NOT NULL,
-  `requester_email` VARCHAR(191) NOT NULL,
-  `department_id` VARCHAR(64) NOT NULL,
-  `department_name` VARCHAR(150) NOT NULL,
-  `team_id` VARCHAR(64) NULL,
-  `team_name` VARCHAR(150) NULL,
+  `assignment_id` VARCHAR(64) NOT NULL,
   `service_id` VARCHAR(64) NOT NULL,
   `service_name` VARCHAR(200) NOT NULL,
-  `reason` TEXT NOT NULL,
-  `duration` VARCHAR(100) NOT NULL,
-  `status` ENUM('Pending Approval', 'Approved', 'Rejected', 'Returned for Modification', 'Revoked') NOT NULL DEFAULT 'Pending Approval',
-  `workflow_id` VARCHAR(64) NOT NULL,
-  `current_stage_index` INT NOT NULL DEFAULT 0,
-  `assigned_account_id` VARCHAR(64) NULL,
-  `assigned_account_email` VARCHAR(191) NULL,
-  `assigned_plan_name` VARCHAR(150) NULL,
-  `access_granted_date` DATETIME NULL,
-  `access_granted_by_id` VARCHAR(64) NULL,
-  `access_granted_by_name` VARCHAR(150) NULL,
-  `access_notes` TEXT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `account_id` VARCHAR(64) NOT NULL,
+  `account_email` VARCHAR(191) NOT NULL,
+  `recipient_id` VARCHAR(64) NOT NULL,
+  `recipient_name` VARCHAR(150) NOT NULL,
+  `recipient_type` ENUM('employee', 'team', 'department') NOT NULL DEFAULT 'employee',
+  `action` ENUM('grant', 'edit', 'extend', 'revoke') NOT NULL,
+  `previous_expiry_date` DATE NULL,
+  `new_expiry_date` DATE NULL,
+  `actor_id` VARCHAR(64) NOT NULL,
+  `actor_name` VARCHAR(150) NOT NULL,
+  `reason_or_notes` TEXT NULL,
+  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_aah_asgn` (`assignment_id`),
+  INDEX `idx_aah_account` (`account_id`)
 ) ENGINE=InnoDB;
 
 -- ----------------------------------------------------------------------------
--- 5. APPROVAL WORKFLOWS & REQUISITIONS
+-- 6. APPROVAL WORKFLOWS & REQUISITIONS
 -- ----------------------------------------------------------------------------
 
 CREATE TABLE `approval_workflows` (
@@ -301,34 +400,41 @@ CREATE TABLE `requisitions` (
   `department_name` VARCHAR(150) NOT NULL,
   `team_id` VARCHAR(64) NULL,
   `team_name` VARCHAR(150) NULL,
-  `service_id` VARCHAR(64) NULL,
+  `service_id` VARCHAR(64) NOT NULL,
   `service_name` VARCHAR(200) NOT NULL,
-  `is_new_service_proposal` BOOLEAN NOT NULL DEFAULT FALSE,
-  `type` ENUM('Tool', 'Service') NOT NULL DEFAULT 'Tool',
+  `service_type` ENUM('Tool', 'Service') NOT NULL,
   `category` VARCHAR(150) NOT NULL,
-  `subcategory` VARCHAR(150) NOT NULL,
-  `purpose` TEXT NOT NULL,
-  `requested_plan` VARCHAR(150) NOT NULL,
-  `account_email` VARCHAR(191) NULL,
+  `justification` TEXT NOT NULL,
   `billing_cycle` VARCHAR(50) NOT NULL DEFAULT 'Monthly',
-  `estimated_amount` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `estimated_amount` DECIMAL(12,2) NOT NULL,
   `currency` VARCHAR(10) NOT NULL DEFAULT 'USD',
-  `expected_purchase_date` DATE NOT NULL,
-  `status` ENUM('Draft', 'Submitted', 'Pending Approval', 'Returned for Modification', 'Approved', 'Rejected', 'Pending Purchase', 'Purchased', 'Cancelled') NOT NULL DEFAULT 'Submitted',
+  `status` ENUM('Draft', 'Pending Approval', 'Approved', 'Rejected', 'Returned for Modification', 'Purchased', 'Cancelled') NOT NULL DEFAULT 'Pending Approval',
   `workflow_id` VARCHAR(64) NOT NULL,
   `current_stage_index` INT NOT NULL DEFAULT 0,
-  `stages_json` JSON NOT NULL,
-  `approved_amount` DECIMAL(12,2) NULL,
-  `actual_purchase_id` VARCHAR(64) NULL,
+  `preferred_vendor_id` VARCHAR(64) NULL,
   `notes` TEXT,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_req_status` (`status`),
-  INDEX `idx_req_requester` (`requester_id`)
+  INDEX `idx_reqs_status` (`status`),
+  INDEX `idx_reqs_dept` (`department_id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `approval_actions` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `requisition_id` VARCHAR(64) NOT NULL,
+  `stage_index` INT NOT NULL,
+  `stage_name` VARCHAR(150) NOT NULL,
+  `actor_id` VARCHAR(64) NOT NULL,
+  `actor_name` VARCHAR(150) NOT NULL,
+  `action` ENUM('Approved', 'Rejected', 'Returned for Modification', 'Skipped') NOT NULL,
+  `comments` TEXT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_actions_req` (`requisition_id`),
+  CONSTRAINT `fk_actions_req` FOREIGN KEY (`requisition_id`) REFERENCES `requisitions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ----------------------------------------------------------------------------
--- 6. PROCUREMENT & PURCHASES (VARIANCE PRESERVATION)
+-- 7. PURCHASES & SUBSCRIPTIONS
 -- ----------------------------------------------------------------------------
 
 CREATE TABLE `purchases` (
@@ -345,26 +451,21 @@ CREATE TABLE `purchases` (
   `purchase_date` DATE NOT NULL,
   `purchase_source` ENUM('Direct', 'Vendor') NOT NULL DEFAULT 'Direct',
   `provider_name` VARCHAR(200) NOT NULL,
-  `provider_website` VARCHAR(255) NULL,
   `vendor_id` VARCHAR(64) NULL,
-  `vendor_name` VARCHAR(200) NULL,
   `payment_card_id` VARCHAR(64) NULL,
   `payment_reference` VARCHAR(150) NOT NULL,
   `invoice_file_name` VARCHAR(255) NULL,
+  `invoice_file_url` VARCHAR(255) NULL,
   `next_renewal_date` DATE NULL,
   `renewal_amount` DECIMAL(12,2) NULL,
   `requested_amount` DECIMAL(12,2) NOT NULL,
-  `difference_amount` DECIMAL(12,2) NOT NULL, -- (actual_amount - requested_amount)
+  `difference_amount` DECIMAL(12,2) NOT NULL,
   `purchaser_id` VARCHAR(64) NOT NULL,
   `purchaser_name` VARCHAR(150) NOT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_purchases_date` (`purchase_date`),
-  INDEX `idx_purchases_service` (`service_id`)
+  CONSTRAINT `fk_purchases_req` FOREIGN KEY (`requisition_id`) REFERENCES `requisitions` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
-
--- ----------------------------------------------------------------------------
--- 7. SUBSCRIPTIONS & HISTORICAL PAYMENT IMMUTABILITY
--- ----------------------------------------------------------------------------
 
 CREATE TABLE `subscriptions` (
   `id` VARCHAR(64) PRIMARY KEY,
@@ -373,7 +474,7 @@ CREATE TABLE `subscriptions` (
   `account_id` VARCHAR(64) NULL,
   `account_email` VARCHAR(191) NULL,
   `plan_name` VARCHAR(150) NOT NULL,
-  `billing_cycle` VARCHAR(50) NOT NULL,
+  `billing_cycle` VARCHAR(50) NOT NULL DEFAULT 'Monthly',
   `purchase_date` DATE NOT NULL,
   `start_date` DATE NOT NULL,
   `current_amount` DECIMAL(12,2) NOT NULL,
@@ -390,12 +491,22 @@ CREATE TABLE `subscriptions` (
   INDEX `idx_subs_status` (`status`)
 ) ENGINE=InnoDB;
 
+CREATE TABLE `subscription_renewals` (
+  `id` VARCHAR(64) PRIMARY KEY,
+  `subscription_id` VARCHAR(64) NOT NULL,
+  `renewal_cycle` VARCHAR(50) NOT NULL,
+  `renewal_date` DATE NOT NULL,
+  `expected_amount` DECIMAL(12,2) NOT NULL,
+  `status` ENUM('Upcoming', 'Processed', 'Skipped', 'Cancelled') NOT NULL DEFAULT 'Upcoming',
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_renewals_date` (`renewal_date`),
+  CONSTRAINT `fk_renewals_sub` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE `subscription_payments` (
   `id` VARCHAR(64) PRIMARY KEY,
   `subscription_id` VARCHAR(64) NOT NULL,
-  `service_id` VARCHAR(64) NOT NULL,
-  `service_name` VARCHAR(200) NOT NULL,
-  `amount` DECIMAL(12,2) NOT NULL,
+  `amount_paid` DECIMAL(12,2) NOT NULL,
   `currency` VARCHAR(10) NOT NULL DEFAULT 'USD',
   `payment_date` DATE NOT NULL,
   `payment_reference` VARCHAR(150) NOT NULL,
@@ -530,3 +641,35 @@ CREATE TABLE `system_settings` (
   `description` VARCHAR(255) NULL,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+-- ============================================================================
+-- SEED DATA: 10 ROLES, 12 ACCESS REASONS & 5 INITIAL PRODUCTION USERS
+-- ============================================================================
+
+INSERT INTO `roles` (`id`, `name`, `description`, `is_system`) VALUES
+('role-1', 'Super Admin', 'Complete system governance, role assignments, card security policies', TRUE),
+('role-2', 'System Admin', 'Manage users, organization units, catalogue services & workflows', TRUE),
+('role-3', 'Employee', 'Submit purchase requisitions and request tool access', TRUE),
+('role-4', 'Team Lead', 'Review and approve first-stage team purchase & access requests', TRUE),
+('role-5', 'Department Lead', 'Review and approve department-wide requisitions & access', TRUE),
+('role-6', 'Operation Manager', 'Provide operational and budgetary purchase authorizations', TRUE),
+('role-7', 'Purchaser', 'Complete approved requests, enter invoices, register accounts', TRUE),
+('role-8', 'Finance', 'Financial records, payments, variance analysis and accounting', TRUE),
+('role-9', 'Management', 'Summarized company expenditure and subscription overview', TRUE),
+('role-10', 'Card Information Viewer', 'Strictly authorized viewer of masked card details and holder data', TRUE)
+ON DUPLICATE KEY UPDATE `description` = VALUES(`description`);
+
+INSERT INTO `predefined_access_reasons` (`id`, `name`, `description`, `display_order`, `is_enabled`, `is_archived`) VALUES
+('rsn-1', 'Project Requirement', 'Direct tooling required for active client or internal project deliverables', 1, TRUE, FALSE),
+('rsn-2', 'Client Requirement', 'Mandated tooling or cloud service specified in client SOW/contract', 2, TRUE, FALSE),
+('rsn-3', 'Development Work', 'Software engineering, API integration, and coding environments', 3, TRUE, FALSE),
+('rsn-4', 'Design Work', 'UI/UX interface, graphic assets, prototyping, and design systems', 4, TRUE, FALSE),
+('rsn-5', 'Testing and QA', 'Automated test execution, quality assurance, and security scans', 5, TRUE, FALSE),
+('rsn-6', 'Research and Development', 'Machine learning exploration, benchmarking, and prototyping', 6, TRUE, FALSE),
+('rsn-7', 'Content Creation', 'Copywriting, documentation, media assets, and social collaterals', 7, TRUE, FALSE),
+('rsn-8', 'Marketing Activities', 'Campaign analytics, SEO analysis, ads management, and outreach', 8, TRUE, FALSE),
+('rsn-9', 'Team Collaboration', 'Cross-functional team coordination, shared knowledge base, and specs', 9, TRUE, FALSE),
+('rsn-10', 'Department Requirement', 'Departmental standard tooling package for onboarding or operations', 10, TRUE, FALSE),
+('rsn-11', 'Temporary Access', 'Short-term evaluation, sprint milestone, or time-boxed spike', 11, TRUE, FALSE),
+('rsn-12', 'Other', 'Specific business requirement requiring written justification', 12, TRUE, FALSE)
+ON DUPLICATE KEY UPDATE `description` = VALUES(`description`);

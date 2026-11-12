@@ -6,9 +6,9 @@ import {
   Moon,
   Sun,
   Shield,
-  UserCheck,
   ChevronDown,
   Menu,
+  LogOut,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -25,8 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const {
     currentUser,
-    switchUser,
-    users,
+    signOut,
     currentView,
     selectedItemId,
     darkMode,
@@ -42,58 +41,64 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const unreadNotifications = notifications.filter((n) => !n.isRead);
 
-  // Friendly title mapping for breadcrumb
+  // Friendly title mapping for breadcrumbs
   const viewTitleMap: Record<string, string> = {
-    dashboard: 'Dashboard',
-    requisitions: 'Requisitions',
+    dashboard: 'Dashboard Overview',
     services: 'Services & Tools Catalogue',
-    accounts: 'Individual Accounts',
+    accounts: 'Accounts & Licenses',
+    access: 'Services & Tools Sharing Hub (Zero Credentials)',
+    sharing: 'Services & Tools Sharing Hub (Zero Credentials)',
+    requisitions: 'Requisitions',
+    approvals: 'Approvals Queue',
+    procurement: 'Procurement & Purchasing',
     subscriptions: 'Subscriptions & Renewals',
-    purchases: 'Purchases & Procurement',
-    vendors: 'Vendors Directory',
+    expenses: 'Expenses & Spend Breakdown',
     cards: 'Restricted Payment Cards',
-    organization: 'Organization & Teams',
-    workflows: 'Approval Workflows',
-    reports: 'Expenditure Reports',
+    reports: 'Financial Reports',
     notifications: 'Notifications Center',
     audit: 'Audit & Security Logs',
-    settings: 'System & RBAC Settings',
+    settings: 'Settings & Email Templates',
+    vendors: 'Vendors Directory',
+    organization: 'Organization Structure',
+    workflows: 'Approval Workflows',
   };
 
   const currentTitle = viewTitleMap[currentView] || 'Overview';
 
   return (
-    <header className="sticky top-0 z-40 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 flex items-center justify-between gap-4 md:gap-8 transition-colors">
-      {/* Zone 1: Mobile toggle + Brand & Breadcrumbs */}
+    <header className="sticky top-0 z-40 h-16 bg-white dark:bg-[#1A1718] border-b border-slate-200 dark:border-[#2D292A] px-4 sm:px-6 flex items-center justify-between gap-4 md:gap-8 transition-colors">
+      {/* Zone 1: Mobile toggle + Official Brand & Breadcrumbs */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
           onClick={onToggleMobileSidebar}
-          className="md:hidden p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="md:hidden p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-[#2A2627]"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5 whitespace-nowrap shrink-0" title="RLTSMS – Your Tools. Your Services. Every Stage, Tracked">
-          <div className="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-            RL
-          </div>
+        <div className="flex items-center gap-2.5 whitespace-nowrap shrink-0" title="RLTSMS – Track Every Tool. Control Every Lifecycle.">
+          <img
+            src="/assets/riseuplabs-logo.png"
+            alt="Riseup Labs Logo"
+            className="w-8 h-8 rounded-lg object-contain shadow-xs border border-slate-200/50 dark:border-slate-700/50 bg-white"
+          />
           <div className="hidden sm:block">
-            <span className="font-bold text-slate-900 dark:text-white tracking-tight text-base">
+            <span className="font-bold text-[#211E1F] dark:text-white tracking-tight text-base font-title">
               RLTSMS
             </span>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 ml-1.5 font-normal">
+            <span className="text-[11px] text-[#EA5400] font-semibold ml-1.5">
               Riseup Labs
             </span>
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center text-xs text-slate-400 dark:text-slate-500 pl-3 border-l border-slate-200 dark:border-slate-800">
+        <div className="hidden lg:flex items-center text-xs text-slate-400 dark:text-slate-400 pl-3 border-l border-slate-200 dark:border-[#2D292A]">
           <span>{currentTitle}</span>
           {selectedItemId && (
             <>
               <span className="mx-1.5">/</span>
-              <span className="font-mono text-slate-600 dark:text-slate-300 font-medium">
+              <span className="font-mono text-slate-700 dark:text-slate-200 font-medium">
                 {selectedItemId}
               </span>
             </>
@@ -106,13 +111,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={onOpenCommandPalette}
-          className="w-full flex items-center justify-between px-3.5 py-1.5 text-xs text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700/80 transition-all cursor-pointer shadow-2xs"
+          className="w-full flex items-center justify-between px-3.5 py-1.5 text-xs text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-[#211E1F] hover:bg-slate-100 dark:hover:bg-[#2D292A] rounded-lg border border-slate-200 dark:border-[#2D292A] transition-all cursor-pointer shadow-2xs"
         >
           <div className="flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-slate-400" />
             <span className="truncate">Search services, requisitions, accounts...</span>
           </div>
-          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-white dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600">
+          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 bg-white dark:bg-[#2D292A] rounded border border-slate-200 dark:border-slate-700">
             <span className="text-xs">⌘</span>K
           </kbd>
         </button>
@@ -124,16 +129,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={onOpenCommandPalette}
-          className="sm:hidden p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+          className="sm:hidden p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#2A2627] cursor-pointer"
         >
           <Search className="w-4 h-4" />
         </button>
 
-        {/* Primary CTA: New Requisition */}
+        {/* Primary CTA: New Requisition in Official Brand Orange */}
         <button
           type="button"
           onClick={onOpenNewRequisition}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 active:bg-sky-700 rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#D64D00] active:bg-[#B84000] rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">New Requisition</span>
@@ -145,35 +150,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#2A2627] transition-colors cursor-pointer"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
             {unreadNotifications.length > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#EA5400] ring-2 ring-white dark:ring-[#211E1F]" />
             )}
           </button>
 
           {showNotifications && (
             <div
-              className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 p-3 space-y-2 animate-in fade-in slide-in-from-top-1"
+              className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#211E1F] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2D292A] z-50 p-3 space-y-2 animate-in fade-in slide-in-from-top-1"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#2D292A]">
                 <span className="text-xs font-semibold text-slate-900 dark:text-white">
                   Notifications ({unreadNotifications.length} unread)
                 </span>
                 {unreadNotifications.length > 0 && (
                   <button
                     onClick={markAllNotificationsRead}
-                    className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+                    className="text-[11px] text-[#EA5400] hover:underline cursor-pointer"
                   >
                     Mark all read
                   </button>
                 )}
               </div>
 
-              <div className="max-h-72 overflow-y-auto space-y-1.5 divide-y divide-slate-100 dark:divide-slate-800/60">
+              <div className="max-h-72 overflow-y-auto space-y-1.5 divide-y divide-slate-100 dark:divide-[#2D292A]">
                 {notifications.slice(0, 8).map((notif) => (
                   <div
                     key={notif.id}
@@ -186,8 +191,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     }}
                     className={`p-2.5 rounded-lg text-xs cursor-pointer transition-colors ${
                       notif.isRead
-                        ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                        : 'bg-sky-50/70 dark:bg-sky-950/30 text-slate-800 dark:text-slate-200 hover:bg-sky-100/60 font-medium'
+                        ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#2D292A]/50'
+                        : 'bg-[#FFF1EB] dark:bg-[#EA5400]/10 text-slate-900 dark:text-slate-100 hover:bg-[#FFE4D6] font-medium'
                     }`}
                   >
                     <div className="font-semibold text-slate-900 dark:text-white">{notif.title}</div>
@@ -204,13 +209,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ))}
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
+              <div className="pt-2 border-t border-slate-100 dark:border-[#2D292A] text-center">
                 <button
                   onClick={() => {
                     setCurrentView('notifications');
                     setShowNotifications(false);
                   }}
-                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400"
+                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-[#EA5400]"
                 >
                   View all alerts & configuration →
                 </button>
@@ -223,20 +228,20 @@ export const Navbar: React.FC<NavbarProps> = ({
         <button
           type="button"
           onClick={toggleDarkMode}
-          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#2A2627] transition-colors cursor-pointer"
           title={darkMode ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
         >
           {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* Role & Persona Switcher */}
+        {/* Authenticated User Profile Menu (Zero Impersonation) */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-1.5 sm:px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs transition-colors cursor-pointer"
+            className="flex items-center gap-2 p-1.5 sm:px-2.5 rounded-lg border border-slate-200 dark:border-[#2D292A] hover:bg-slate-50 dark:hover:bg-[#2A2627] text-xs transition-colors cursor-pointer"
           >
-            <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center font-bold text-[10px]">
+            <div className="w-7 h-7 rounded-full bg-[#211E1F] text-white dark:bg-[#EA5400] flex items-center justify-center font-bold text-[11px] ring-1 ring-slate-200 dark:ring-slate-700">
               {currentUser.name
                 .split(' ')
                 .map((n) => n[0])
@@ -246,7 +251,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="font-semibold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
                 <span>{currentUser.name}</span>
                 {currentUser.roles.includes('Super Admin') && (
-                  <Shield className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                  <Shield className="w-3 h-3 text-[#EA5400]" />
                 )}
               </div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -258,53 +263,87 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {showUserMenu && (
             <div
-              className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 p-2 space-y-2 animate-in fade-in"
+              className="absolute right-0 mt-2 w-80 bg-white dark:bg-[#211E1F] rounded-xl shadow-2xl border border-slate-200 dark:border-[#2D292A] z-50 p-3 space-y-3 animate-in fade-in"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs">
-                <div className="font-semibold text-slate-900 dark:text-white">Active User Switcher</div>
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Switch personas to test approval levels, card restrictions & procurement view.
+              {/* Profile Card Header */}
+              <div className="p-3 bg-slate-50 dark:bg-[#1A1718] rounded-xl border border-slate-200/60 dark:border-[#2D292A]/60">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#EA5400] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                    {currentUser.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-slate-900 dark:text-white text-sm truncate flex items-center gap-1.5">
+                      <span>{currentUser.name}</span>
+                      <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" title="Active Account" />
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {currentUser.email}
+                    </div>
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 font-medium mt-0.5">
+                      {currentUser.designation}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-[#2D292A] grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Department</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium truncate block">
+                      {currentUser.departmentName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Team</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium truncate block">
+                      {currentUser.teamName || 'Cross-Functional'}
+                    </span>
+                  </div>
+                  {currentUser.reportingLeadName && (
+                    <div className="col-span-2 pt-1">
+                      <span className="text-slate-400 block text-[10px] uppercase font-semibold">Reporting Lead</span>
+                      <span className="text-slate-700 dark:text-slate-300 font-medium truncate block">
+                        {currentUser.reportingLeadName}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="max-h-64 overflow-y-auto space-y-1">
-                {users.map((u) => {
-                  const isCurrent = u.id === currentUser.id;
-                  return (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        switchUser(u.id);
-                        setShowUserMenu(false);
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors cursor-pointer ${
-                        isCurrent
-                          ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-900 dark:text-sky-200 font-semibold'
-                          : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                      }`}
+              {/* Roles & Permissions Badges */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1.5 px-0.5">
+                  Assigned System Roles
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {currentUser.roles.map((role) => (
+                    <span
+                      key={role}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#2D292A] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                     >
-                      <div>
-                        <div className="font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
-                          {u.name}
-                          {isCurrent && <UserCheck className="w-3.5 h-3.5 text-sky-600" />}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                          {u.roles.join(', ')} · {u.departmentName}
-                        </div>
-                      </div>
-                      {u.cardPermissionLevel && u.cardPermissionLevel !== 'none' && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                          Card Viewer
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                      {role === 'Super Admin' && <Shield className="w-3 h-3 text-[#EA5400]" />}
+                      {role}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 text-center">
-                RBAC session synced with permissions
+              {/* Sign Out CTA */}
+              <div className="pt-2 border-t border-slate-100 dark:border-[#2D292A]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    signOut();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out of RLTSMS</span>
+                </button>
               </div>
             </div>
           )}
