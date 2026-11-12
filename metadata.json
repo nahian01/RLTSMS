@@ -1,0 +1,6 @@
+{
+  "name": "RLTSMS - Tools & Services Management System",
+  "description": "Your Tools. Your Services. Every Stage, Tracked. Enterprise procurement, approval workflows, subscription tracking, restricted card access, and expenditure reporting for Riseup Labs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
