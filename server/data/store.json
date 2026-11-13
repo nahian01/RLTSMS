@@ -6,12 +6,10 @@
       "email": "nahian@riseuplabs.com",
       "phone": "+880 1710-001122",
       "designation": "Super Administrator",
-      "departmentId": "dept-5",
-      "departmentName": "Finance & Admin",
+      "departmentId": "",
+      "departmentName": "Unassigned",
       "roles": [
-        "Super Admin",
-        "System Admin",
-        "Card Information Viewer"
+        "Super Admin"
       ],
       "accountStatus": "Active",
       "cardPermissionLevel": "manage",
@@ -88,6 +86,27 @@
       "accountStatus": "Active",
       "cardPermissionLevel": "none",
       "passwordHash": "riseuplabs_salt_2026:5bbe486a10f37e5b780d2850bf9b3ce5338e0ba69c99a07842652db52cab6e310e7a9d1b9f27935855dd50d6038e1210dd185ee3391415b67b2c766812a34024"
+    },
+    {
+      "id": "usr-1794595001259",
+      "name": "Nafis Sadik",
+      "email": "nafis.sadik@riseuplabs.com",
+      "phone": "+880 1711-223344",
+      "designation": "Senior DevOps Engineer",
+      "departmentId": "dept-eng",
+      "departmentName": "Engineering",
+      "teamId": "team-mobile",
+      "reportingLeadId": "usr-3",
+      "reportingLeadName": "Tariq Ahmed",
+      "roles": [
+        "Employee",
+        "Team Lead"
+      ],
+      "accountStatus": "Inactive",
+      "invitationSentAt": "2026-11-13T18:36:41.259Z",
+      "invitationExpiresAt": "2026-11-15T18:36:41.259Z",
+      "cardPermissionLevel": "none",
+      "passwordHash": "be0a59f6bb3a806e5ec18fdb71f19bc9:079897b4ef2fbb46eaaedc9584bc3e8e2b033b2bc64167767d2cc37a78c37035aa39108c74241f6ff8e68826c450db2522666b230b458d1c4aea2ac99d3ee9bc"
     }
   ],
   "departments": [
@@ -210,9 +229,18 @@
       "description": "Manage users, organization units, catalogue services & workflows",
       "isSystem": true,
       "permissions": [
+        "services:view",
         "services:write",
-        "users:write",
-        "workflows:write"
+        "accounts:view",
+        "accounts:write",
+        "org:view",
+        "org:manage",
+        "workflows:write",
+        "rbac:view",
+        "rbac:manage",
+        "settings:manage",
+        "reports:view",
+        "audit:view"
       ]
     },
     {
@@ -221,7 +249,12 @@
       "description": "Submit purchase requisitions and request tool access",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
+        "requisitions:view",
         "requisitions:submit",
+        "services:view",
+        "accounts:view",
+        "access:view",
         "access:request"
       ]
     },
@@ -231,8 +264,14 @@
       "description": "Review and approve first-stage team purchase & access requests",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
+        "requisitions:view",
+        "requisitions:submit",
         "approvals:team",
-        "requisitions:submit"
+        "access:view",
+        "access:request",
+        "access:approve",
+        "org:view"
       ]
     },
     {
@@ -241,7 +280,14 @@
       "description": "Review and approve department-wide requisitions & access",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
+        "requisitions:view",
+        "requisitions:submit",
         "approvals:department",
+        "access:view",
+        "access:request",
+        "access:approve",
+        "org:view",
         "reports:view"
       ]
     },
@@ -251,8 +297,14 @@
       "description": "Provide operational and budgetary purchase authorizations",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
+        "requisitions:view",
         "approvals:operations",
-        "reports:view"
+        "purchases:view",
+        "org:view",
+        "reports:view",
+        "access:view",
+        "access:approve"
       ]
     },
     {
@@ -261,8 +313,15 @@
       "description": "Complete approved requests, enter invoices, register accounts",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
+        "requisitions:view",
+        "purchases:view",
         "purchases:write",
-        "accounts:write"
+        "accounts:view",
+        "accounts:write",
+        "cards:view_masked",
+        "subscriptions:view",
+        "reports:view"
       ]
     },
     {
@@ -271,9 +330,13 @@
       "description": "Financial records, payments, variance analysis and accounting",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
         "finance:view",
-        "reports:view",
-        "expenses:view"
+        "expenses:view",
+        "expenses:write",
+        "purchases:view",
+        "subscriptions:view",
+        "reports:view"
       ]
     },
     {
@@ -282,8 +345,12 @@
       "description": "Summarized company expenditure and subscription overview",
       "isSystem": true,
       "permissions": [
+        "dashboard:view",
+        "dashboard:executive",
         "reports:view",
-        "dashboard:executive"
+        "org:view",
+        "finance:view",
+        "subscriptions:view"
       ]
     },
     {
@@ -292,8 +359,292 @@
       "description": "Strictly authorized viewer of masked card details and holder data",
       "isSystem": true,
       "permissions": [
-        "cards:view_masked"
+        "cards:view_masked",
+        "cards:reveal_full",
+        "reports:view"
       ]
+    }
+  ],
+  "permissions": [
+    {
+      "id": "perm-1",
+      "code": "dashboard:view",
+      "name": "View Dashboard",
+      "module": "Dashboard",
+      "description": "Access standard dashboard overview and analytics",
+      "isSystem": true
+    },
+    {
+      "id": "perm-2",
+      "code": "dashboard:executive",
+      "name": "Executive Overview",
+      "module": "Dashboard",
+      "description": "View high-level executive and cross-departmental financial KPIs",
+      "isSystem": true
+    },
+    {
+      "id": "perm-3",
+      "code": "requisitions:view",
+      "name": "View Requisitions",
+      "module": "Requisitions",
+      "description": "View purchase requisition records and details",
+      "isSystem": true
+    },
+    {
+      "id": "perm-4",
+      "code": "requisitions:submit",
+      "name": "Submit Requisition",
+      "module": "Requisitions",
+      "description": "Create and submit new tool or service purchase requisitions",
+      "isSystem": true
+    },
+    {
+      "id": "perm-5",
+      "code": "requisitions:manage",
+      "name": "Manage Requisitions",
+      "module": "Requisitions",
+      "description": "Cancel, edit, or override purchase requisitions",
+      "isSystem": true
+    },
+    {
+      "id": "perm-6",
+      "code": "approvals:team",
+      "name": "Team Lead Approvals",
+      "module": "Approvals",
+      "description": "Review and approve level 1 team purchase & access requests",
+      "isSystem": true
+    },
+    {
+      "id": "perm-7",
+      "code": "approvals:department",
+      "name": "Department Lead Approvals",
+      "module": "Approvals",
+      "description": "Review and approve level 2 department requisitions",
+      "isSystem": true
+    },
+    {
+      "id": "perm-8",
+      "code": "approvals:operations",
+      "name": "Operations Approvals",
+      "module": "Approvals",
+      "description": "Provide operational and budgetary authorization",
+      "isSystem": true
+    },
+    {
+      "id": "perm-9",
+      "code": "approvals:finance",
+      "name": "Finance Approvals",
+      "module": "Approvals",
+      "description": "Authorize budget allocations and financial disbursements",
+      "isSystem": true
+    },
+    {
+      "id": "perm-10",
+      "code": "services:view",
+      "name": "View Catalogue",
+      "module": "Services",
+      "description": "Browse approved catalogue services and tools",
+      "isSystem": true
+    },
+    {
+      "id": "perm-11",
+      "code": "services:write",
+      "name": "Manage Catalogue",
+      "module": "Services",
+      "description": "Add, update, or archive catalogue services & plans",
+      "isSystem": true
+    },
+    {
+      "id": "perm-12",
+      "code": "accounts:view",
+      "name": "View Accounts",
+      "module": "Accounts",
+      "description": "View software accounts and seat assignments",
+      "isSystem": true
+    },
+    {
+      "id": "perm-13",
+      "code": "accounts:write",
+      "name": "Manage Accounts",
+      "module": "Accounts",
+      "description": "Register service accounts and manage license seats",
+      "isSystem": true
+    },
+    {
+      "id": "perm-14",
+      "code": "access:view",
+      "name": "View Sharing Hub",
+      "module": "Access Sharing",
+      "description": "View shared accounts, upcoming events, and access allocations",
+      "isSystem": true
+    },
+    {
+      "id": "perm-15",
+      "code": "access:request",
+      "name": "Request Tool Access",
+      "module": "Access Sharing",
+      "description": "Submit access requests for company shared software seats",
+      "isSystem": true
+    },
+    {
+      "id": "perm-16",
+      "code": "access:approve",
+      "name": "Approve Access Requests",
+      "module": "Access Sharing",
+      "description": "Review and approve employee access sharing requests",
+      "isSystem": true
+    },
+    {
+      "id": "perm-17",
+      "code": "access:assign",
+      "name": "Provision Access",
+      "module": "Access Sharing",
+      "description": "Assign, extend, or revoke shared account seats for users",
+      "isSystem": true
+    },
+    {
+      "id": "perm-18",
+      "code": "purchases:view",
+      "name": "View Purchases",
+      "module": "Procurement",
+      "description": "View procurement logs and order records",
+      "isSystem": true
+    },
+    {
+      "id": "perm-19",
+      "code": "purchases:write",
+      "name": "Execute Purchases",
+      "module": "Procurement",
+      "description": "Complete purchases, record invoices, and register accounts",
+      "isSystem": true
+    },
+    {
+      "id": "perm-20",
+      "code": "subscriptions:view",
+      "name": "View Subscriptions",
+      "module": "Subscriptions",
+      "description": "Track subscription renewals and billing cycles",
+      "isSystem": true
+    },
+    {
+      "id": "perm-21",
+      "code": "subscriptions:write",
+      "name": "Manage Subscriptions",
+      "module": "Subscriptions",
+      "description": "Update renewal terms, cancel, or record subscription payments",
+      "isSystem": true
+    },
+    {
+      "id": "perm-22",
+      "code": "expenses:view",
+      "name": "View Expenses",
+      "module": "Finance",
+      "description": "View company tool & subscription expense items",
+      "isSystem": true
+    },
+    {
+      "id": "perm-23",
+      "code": "expenses:write",
+      "name": "Manage Expenses",
+      "module": "Finance",
+      "description": "Record and categorize expenditures",
+      "isSystem": true
+    },
+    {
+      "id": "perm-24",
+      "code": "finance:view",
+      "name": "Financial Analytics",
+      "module": "Finance",
+      "description": "Comprehensive financial variance and budget forecasting",
+      "isSystem": true
+    },
+    {
+      "id": "perm-25",
+      "code": "cards:view_masked",
+      "name": "View Masked Cards",
+      "module": "Payment Cards",
+      "description": "View masked card details and holder information",
+      "isSystem": true
+    },
+    {
+      "id": "perm-26",
+      "code": "cards:reveal_full",
+      "name": "Reveal Card Password",
+      "module": "Payment Cards",
+      "description": "Authenticate with password to reveal unmasked card details",
+      "isSystem": true
+    },
+    {
+      "id": "perm-27",
+      "code": "cards:manage",
+      "name": "Manage Payment Cards",
+      "module": "Payment Cards",
+      "description": "Add, update, or assign permissions for corporate payment cards",
+      "isSystem": true
+    },
+    {
+      "id": "perm-28",
+      "code": "org:view",
+      "name": "View Organization",
+      "module": "Organization",
+      "description": "View department structure, teams, and employee roster",
+      "isSystem": true
+    },
+    {
+      "id": "perm-29",
+      "code": "org:manage",
+      "name": "Manage Organization",
+      "module": "Organization",
+      "description": "Create, edit, and delete departments, teams, and manage employees",
+      "isSystem": true
+    },
+    {
+      "id": "perm-30",
+      "code": "rbac:view",
+      "name": "View Roles & RBAC",
+      "module": "RBAC",
+      "description": "View role definitions, permissions matrix, and user assignments",
+      "isSystem": true
+    },
+    {
+      "id": "perm-31",
+      "code": "rbac:manage",
+      "name": "Manage Roles & RBAC",
+      "module": "RBAC",
+      "description": "Create, edit, and delete dynamic roles and assign permissions",
+      "isSystem": true
+    },
+    {
+      "id": "perm-32",
+      "code": "workflows:write",
+      "name": "Configure Workflows",
+      "module": "Workflows",
+      "description": "Design and customize approval workflows and stages",
+      "isSystem": true
+    },
+    {
+      "id": "perm-33",
+      "code": "reports:view",
+      "name": "View & Export Reports",
+      "module": "Reports",
+      "description": "Generate and download CSV reports and audit analytics",
+      "isSystem": true
+    },
+    {
+      "id": "perm-34",
+      "code": "audit:view",
+      "name": "Inspect Audit Logs",
+      "module": "Audit",
+      "description": "View immutable security and activity audit ledger",
+      "isSystem": true
+    },
+    {
+      "id": "perm-35",
+      "code": "settings:manage",
+      "name": "System Settings",
+      "module": "Settings",
+      "description": "Modify system parameters and email notification templates",
+      "isSystem": true
     }
   ],
   "categories": [
@@ -980,8 +1331,8 @@
   ],
   "cardLogs": [
     {
-      "id": "clog-1794538401976",
-      "timestamp": "2026-11-13T02:53:21.976Z",
+      "id": "clog-1794595000804",
+      "timestamp": "2026-11-13T18:36:40.804Z",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "userId": "usr-1",
@@ -990,8 +1341,8 @@
       "justification": "Password-verified secure reveal (owner-authorized)"
     },
     {
-      "id": "clog-1794538401623",
-      "timestamp": "2026-11-13T02:53:21.623Z",
+      "id": "clog-1794595000474",
+      "timestamp": "2026-11-13T18:36:40.474Z",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "userId": "usr-4",
@@ -1055,21 +1406,21 @@
       "status": "Active"
     },
     {
-      "id": "cperm-1794538401873",
+      "id": "cperm-1794595000714",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "ownerId": "usr-4",
       "authorizedUserId": "usr-1",
       "authorizedUserName": "Sarah Lin",
       "authorizedUserEmail": "sarah.lin@riseuplabs.com",
-      "grantedAt": "2026-11-13T02:53:21.873Z",
+      "grantedAt": "2026-11-13T18:36:40.714Z",
       "status": "Revoked",
-      "revokedAt": "2026-11-13T02:53:22.086Z"
+      "revokedAt": "2026-11-13T18:36:40.907Z"
     }
   ],
   "cardRevealLogs": [
     {
-      "id": "craud-1794538402193",
+      "id": "craud-1794595001005",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-1",
@@ -1077,11 +1428,11 @@
       "viewerEmail": "sarah.lin@riseuplabs.com",
       "action": "unauthorized_attempt",
       "result": "Denied",
-      "timestamp": "2026-11-13T02:53:22.193Z",
+      "timestamp": "2026-11-13T18:36:41.005Z",
       "notes": "User Sarah Lin attempted reveal without owner visibility authorization."
     },
     {
-      "id": "craud-1794538402086",
+      "id": "craud-1794595000907",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1089,11 +1440,11 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "visibility_revoked",
       "result": "Success",
-      "timestamp": "2026-11-13T02:53:22.086Z",
+      "timestamp": "2026-11-13T18:36:40.907Z",
       "notes": "Card owner Wasiur Rahman revoked viewing permission from Sarah Lin"
     },
     {
-      "id": "craud-1794538402079",
+      "id": "craud-1794595000895",
       "cardId": "card-3",
       "cardName": "Local Currency BDT Operational Card",
       "viewerId": "usr-1",
@@ -1101,11 +1452,11 @@
       "viewerEmail": "sarah.lin@riseuplabs.com",
       "action": "unauthorized_attempt",
       "result": "Denied",
-      "timestamp": "2026-11-13T02:53:22.079Z",
+      "timestamp": "2026-11-13T18:36:40.895Z",
       "notes": "User Sarah Lin attempted reveal without owner visibility authorization."
     },
     {
-      "id": "craud-1794538401976",
+      "id": "craud-1794595000804",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-1",
@@ -1113,11 +1464,11 @@
       "viewerEmail": "sarah.lin@riseuplabs.com",
       "action": "reveal_masked",
       "result": "Success",
-      "timestamp": "2026-11-13T02:53:21.976Z",
+      "timestamp": "2026-11-13T18:36:40.804Z",
       "notes": "Card information revealed for 30s window. Verification: Password + Owner Authorization."
     },
     {
-      "id": "craud-1794538401874",
+      "id": "craud-1794595000714",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1125,11 +1476,11 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "visibility_granted",
       "result": "Success",
-      "timestamp": "2026-11-13T02:53:21.874Z",
+      "timestamp": "2026-11-13T18:36:40.714Z",
       "notes": "Card owner Wasiur Rahman granted viewing permission to Sarah Lin"
     },
     {
-      "id": "craud-1794538401860",
+      "id": "craud-1794595000702",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-admin",
@@ -1137,11 +1488,11 @@
       "viewerEmail": "nahian@riseuplabs.com",
       "action": "unauthorized_attempt",
       "result": "Denied",
-      "timestamp": "2026-11-13T02:53:21.860Z",
+      "timestamp": "2026-11-13T18:36:40.702Z",
       "notes": "User Abdullah Nahian attempted reveal without owner visibility authorization."
     },
     {
-      "id": "craud-1794538401748",
+      "id": "craud-1794595000594",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1149,11 +1500,11 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "failed_password",
       "result": "Denied",
-      "timestamp": "2026-11-13T02:53:21.748Z",
+      "timestamp": "2026-11-13T18:36:40.594Z",
       "notes": "Failed password verification attempt by Wasiur Rahman"
     },
     {
-      "id": "craud-1794538401622",
+      "id": "craud-1794595000474",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1161,7 +1512,7 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "reveal_masked",
       "result": "Success",
-      "timestamp": "2026-11-13T02:53:21.623Z",
+      "timestamp": "2026-11-13T18:36:40.474Z",
       "notes": "Card information revealed for 30s window. Verification: Password + Owner Authorization."
     }
   ],
@@ -1647,7 +1998,7 @@
   ],
   "accessRequests": [
     {
-      "id": "acc-req-1794538402428",
+      "id": "acc-req-1794595001190",
       "requestNumber": "ACC-2026-017",
       "requesterId": "usr-5",
       "requesterName": "Kazi Fahim",
@@ -1675,21 +2026,21 @@
           "assignedApproverName": "Abdullah Nahian",
           "isRequired": true,
           "status": "Approved",
-          "actionDate": "2026-11-13T02:53:22.440Z",
+          "actionDate": "2026-11-13T18:36:41.200Z",
           "actorName": "Abdullah Nahian"
         }
       ],
-      "createdAt": "2026-11-13T02:53:22.428Z",
-      "updatedAt": "2026-11-13T02:53:22.440Z",
+      "createdAt": "2026-11-13T18:36:41.190Z",
+      "updatedAt": "2026-11-13T18:36:41.200Z",
       "assignedAccountId": "acc-1",
       "assignedAccountEmail": "dev.ai1@riseuplabs.com",
       "assignedPlanName": "Team Workspace (5 Seats)",
-      "accessGrantedDate": "2026-11-13T02:53:22.440Z",
+      "accessGrantedDate": "2026-11-13T18:36:41.200Z",
       "accessGrantedById": "usr-admin",
       "accessGrantedByName": "Abdullah Nahian",
       "reviewedById": "usr-admin",
       "reviewedByName": "Abdullah Nahian",
-      "approvalDate": "2026-11-13T02:53:22.440Z",
+      "approvalDate": "2026-11-13T18:36:41.200Z",
       "accessNotes": "1-click approval authorized by Super Admin"
     },
     {
@@ -1782,7 +2133,7 @@
   ],
   "accessAssignments": [
     {
-      "id": "asgn-1794538402436",
+      "id": "asgn-1794595001199",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -1799,11 +2150,11 @@
       "status": "Active",
       "provisioningStatus": "Provisioned",
       "notes": "1-click approval authorized by Super Admin",
-      "createdAt": "2026-11-13T02:53:22.436Z",
-      "updatedAt": "2026-11-13T02:53:22.436Z"
+      "createdAt": "2026-11-13T18:36:41.199Z",
+      "updatedAt": "2026-11-13T18:36:41.199Z"
     },
     {
-      "id": "asgn-1794538402214",
+      "id": "asgn-1794595001025",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -1824,8 +2175,8 @@
       "status": "Revoked",
       "provisioningStatus": "Provisioned",
       "notes": "Testing zero-credential assignment | Revoked: Project completed",
-      "createdAt": "2026-11-13T02:53:22.215Z",
-      "updatedAt": "2026-11-13T02:53:22.244Z"
+      "createdAt": "2026-11-13T18:36:41.025Z",
+      "updatedAt": "2026-11-13T18:36:41.047Z"
     },
     {
       "id": "asgn-1",
@@ -1892,8 +2243,8 @@
   ],
   "accessHistory": [
     {
-      "id": "hist-1794538402436",
-      "assignmentId": "asgn-1794538402436",
+      "id": "hist-1794595001199",
+      "assignmentId": "asgn-1794595001199",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -1906,11 +2257,11 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Initial grant via 1-click approval for request ACC-2026-017",
-      "timestamp": "2026-11-13T02:53:22.436Z"
+      "timestamp": "2026-11-13T18:36:41.199Z"
     },
     {
-      "id": "hist-1794538402245",
-      "assignmentId": "asgn-1794538402214",
+      "id": "hist-1794595001048",
+      "assignmentId": "asgn-1794595001025",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -1923,11 +2274,11 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Project completed",
-      "timestamp": "2026-11-13T02:53:22.245Z"
+      "timestamp": "2026-11-13T18:36:41.048Z"
     },
     {
-      "id": "hist-1794538402230",
-      "assignmentId": "asgn-1794538402214",
+      "id": "hist-1794595001040",
+      "assignmentId": "asgn-1794595001025",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -1941,11 +2292,11 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Access extended by administrator",
-      "timestamp": "2026-11-13T02:53:22.230Z"
+      "timestamp": "2026-11-13T18:36:41.040Z"
     },
     {
-      "id": "hist-1794538402215",
-      "assignmentId": "asgn-1794538402214",
+      "id": "hist-1794595001026",
+      "assignmentId": "asgn-1794595001025",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -1958,7 +2309,7 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Testing zero-credential assignment",
-      "timestamp": "2026-11-13T02:53:22.215Z"
+      "timestamp": "2026-11-13T18:36:41.026Z"
     },
     {
       "id": "hist-1",
@@ -2117,14 +2468,14 @@
       "updatedAt": "2026-01-01T00:00:00Z"
     },
     {
-      "id": "rsn-1794538402385",
+      "id": "rsn-1794595001161",
       "name": "Security Vulnerability Patching (High Priority)",
       "description": "Dedicated access for urgent CVE remediation sprint",
       "displayOrder": 2,
       "isEnabled": false,
       "isArchived": true,
-      "createdAt": "2026-11-13T02:53:22.385Z",
-      "updatedAt": "2026-11-13T02:53:22.414Z"
+      "createdAt": "2026-11-13T18:36:41.161Z",
+      "updatedAt": "2026-11-13T18:36:41.178Z"
     }
   ],
   "emailTemplates": [
@@ -2270,18 +2621,7 @@
   ],
   "emailLogs": [
     {
-      "id": "elog-1794593579084",
-      "templateKey": "password_reset",
-      "templateName": "Password Reset Instructions",
-      "recipientEmail": "nahian@riseuplabs.com",
-      "recipientName": "Abdullah Nahian",
-      "subject": "[RLTSMS Security] Password reset instructions for Abdullah Nahian",
-      "status": "Sent",
-      "attemptCount": 1,
-      "dispatchedAt": "2026-11-13T18:12:59.084Z"
-    },
-    {
-      "id": "elog-1794538402595",
+      "id": "elog-1794595001346",
       "templateKey": "employee_invitation",
       "templateName": "Employee Workspace Invitation",
       "recipientEmail": "nafis.sadik@riseuplabs.com",
@@ -2289,10 +2629,10 @@
       "subject": "Welcome to RLTSMS – Activate your Riseup Labs account",
       "status": "Sent",
       "attemptCount": 1,
-      "dispatchedAt": "2026-11-13T02:53:22.595Z"
+      "dispatchedAt": "2026-11-13T18:36:41.346Z"
     },
     {
-      "id": "elog-1794538402440",
+      "id": "elog-1794595001200",
       "templateKey": "access_notification",
       "templateName": "Tool & Service Access Status Notice",
       "recipientEmail": "kazi.fahim@riseuplabs.com",
@@ -2300,11 +2640,11 @@
       "subject": "RLTSMS Access Granted: ChatGPT Team / Plus",
       "status": "Sent",
       "attemptCount": 1,
-      "providerMessageId": "msg_1794538402440",
-      "dispatchedAt": "2026-11-13T02:53:22.440Z"
+      "providerMessageId": "msg_1794595001200",
+      "dispatchedAt": "2026-11-13T18:36:41.200Z"
     },
     {
-      "id": "elog-1794538402334",
+      "id": "elog-1794595001127",
       "templateKey": "otp_verification",
       "templateName": "OTP Verification Security Code",
       "recipientEmail": "test-admin@riseuplabs.com",
@@ -2312,8 +2652,8 @@
       "subject": "[TEST] [RLTSMS Security] Your verification code is SAMPLE",
       "status": "Sent",
       "attemptCount": 1,
-      "providerMessageId": "msg_test_1794538402334",
-      "dispatchedAt": "2026-11-13T02:53:22.334Z"
+      "providerMessageId": "msg_test_1794595001127",
+      "dispatchedAt": "2026-11-13T18:36:41.127Z"
     },
     {
       "id": "elog-1",
@@ -2354,38 +2694,38 @@
   ],
   "notifications": [
     {
-      "id": "notif-1794538402440",
+      "id": "notif-1794595001200",
       "recipientId": "usr-5",
       "title": "Access Authorized: ChatGPT Team / Plus",
       "message": "Your access request ACC-2026-017 for ChatGPT Team / Plus has been approved and provisioned through 2027-02-15.",
       "type": "access",
       "isRead": false,
-      "createdAt": "2026-11-13T02:53:22.440Z",
+      "createdAt": "2026-11-13T18:36:41.200Z",
       "linkAction": {
         "view": "access"
       }
     },
     {
-      "id": "notif-1794538402429",
+      "id": "notif-1794595001191",
       "recipientId": "usr-admin",
       "title": "New Access Request: ChatGPT Team / Plus",
       "message": "Kazi Fahim (Finance & Admin) requested Shared Team Seat on ChatGPT Team / Plus. Reason: Project Requirement.",
       "type": "access",
       "isRead": false,
-      "createdAt": "2026-11-13T02:53:22.429Z",
+      "createdAt": "2026-11-13T18:36:41.191Z",
       "linkAction": {
         "view": "access",
-        "id": "acc-req-1794538402428"
+        "id": "acc-req-1794595001190"
       }
     },
     {
-      "id": "notif-1794538402245",
+      "id": "notif-1794595001048",
       "recipientId": "usr-1",
       "title": "Access Revoked: ChatGPT Team / Plus",
       "message": "Your access to ChatGPT Team / Plus has been revoked. Reason: Project completed.",
       "type": "access",
       "isRead": false,
-      "createdAt": "2026-11-13T02:53:22.245Z",
+      "createdAt": "2026-11-13T18:36:41.048Z",
       "linkAction": {
         "view": "access"
       }
@@ -2444,148 +2784,238 @@
   ],
   "auditLogs": [
     {
-      "id": "aud-1794593579085",
-      "timestamp": "2026-11-13T18:12:59.085Z",
+      "id": "aud-1794595001476",
+      "timestamp": "2026-11-13T18:36:41.476Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
-      "action": "Password Reset Requested",
-      "entity": "Authentication",
-      "entityId": "usr-admin",
-      "details": "Password reset instructions dispatched to nahian@riseuplabs.com."
+      "action": "Delete Department & Auto-Unassign",
+      "entity": "Department",
+      "entityId": "dept-1794595001431",
+      "details": "Deleted department \"Game Development\". Automatically unassigned 1 employee(s) and removed 0 child team(s)."
     },
     {
-      "id": "aud-1794593347463",
-      "timestamp": "2026-11-13T18:09:07.463Z",
+      "id": "aud-1794595001465",
+      "timestamp": "2026-11-13T18:36:41.465Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
-      "action": "Failed Login Attempt",
-      "entity": "Authentication",
-      "entityId": "usr-admin",
-      "details": "Failed password attempt for user nahian@riseuplabs.com"
+      "action": "Delete Team & Auto-Unassign",
+      "entity": "Team",
+      "entityId": "team-1794595001445",
+      "details": "Deleted team \"Unreal Engine Core\". Automatically unassigned 1 employee(s) from this team."
     },
     {
-      "id": "aud-1794593314423",
-      "timestamp": "2026-11-13T18:08:34.424Z",
+      "id": "aud-1794595001459",
+      "timestamp": "2026-11-13T18:36:41.459Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
-      "action": "User Login",
-      "entity": "Authentication",
+      "action": "Update Employee Profile",
+      "entity": "User",
       "entityId": "usr-admin",
-      "details": "User nahian@riseuplabs.com successfully logged in."
+      "details": "Updated profile details for employee Abdullah Nahian (nahian@riseuplabs.com) [Dept: Game Development, Team: Unreal Engine Core]."
     },
     {
-      "id": "aud-1794538402612",
-      "timestamp": "2026-11-13T02:53:22.612Z",
+      "id": "aud-1794595001445",
+      "timestamp": "2026-11-13T18:36:41.445Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Create Team",
+      "entity": "Team",
+      "entityId": "team-1794595001445",
+      "details": "Created team \"Unreal Engine Core\" under department \"Game Development\"."
+    },
+    {
+      "id": "aud-1794595001431",
+      "timestamp": "2026-11-13T18:36:41.431Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Create Department",
+      "entity": "Department",
+      "entityId": "dept-1794595001431",
+      "details": "Created department \"Game Development\" with lead Abdullah Nahian."
+    },
+    {
+      "id": "aud-1794595001423",
+      "timestamp": "2026-11-13T18:36:41.423Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Delete Permission",
+      "entity": "RBAC",
+      "entityId": "perm-1794595001374",
+      "details": "Deleted permission [custom:feature_access] \"Custom Feature Access Updated\". Removed from all assigned roles."
+    },
+    {
+      "id": "aud-1794595001414",
+      "timestamp": "2026-11-13T18:36:41.414Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Delete Role",
+      "entity": "RBAC",
+      "entityId": "role-1794595001391",
+      "details": "Deleted role \"QA Lead\". Removed role assignment from 1 user(s)."
+    },
+    {
+      "id": "aud-1794595001409",
+      "timestamp": "2026-11-13T18:36:41.409Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Update User Roles",
+      "entity": "User",
+      "entityId": "usr-admin",
+      "details": "Updated roles for Abdullah Nahian (nahian@riseuplabs.com) to: [Super Admin, QA Lead]."
+    },
+    {
+      "id": "aud-1794595001399",
+      "timestamp": "2026-11-13T18:36:41.399Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Update Role Permissions",
+      "entity": "RBAC",
+      "entityId": "role-1794595001391",
+      "details": "Updated role \"QA Lead\". Permissions now assigned: 3 items."
+    },
+    {
+      "id": "aud-1794595001392",
+      "timestamp": "2026-11-13T18:36:41.392Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Create Dynamic Role",
+      "entity": "RBAC",
+      "entityId": "role-1794595001391",
+      "details": "Created new custom role \"QA Lead\" with 2 initial permissions."
+    },
+    {
+      "id": "aud-1794595001383",
+      "timestamp": "2026-11-13T18:36:41.383Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Update Permission",
+      "entity": "RBAC",
+      "entityId": "perm-1794595001374",
+      "details": "Updated permission [custom:feature_access] \"Custom Feature Access Updated\"."
+    },
+    {
+      "id": "aud-1794595001374",
+      "timestamp": "2026-11-13T18:36:41.374Z",
+      "userId": "usr-admin",
+      "userName": "Abdullah Nahian",
+      "action": "Create Dynamic Permission",
+      "entity": "RBAC",
+      "entityId": "perm-1794595001374",
+      "details": "Created custom permission [custom:feature_access] \"Custom Feature Access\" under custom."
+    },
+    {
+      "id": "aud-1794595001363",
+      "timestamp": "2026-11-13T18:36:41.363Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Deactivate Account",
       "entity": "User",
-      "entityId": "usr-1794538402491",
+      "entityId": "usr-1794595001259",
       "details": "Deactivated account for Nafis Sadik (nafis.sadik@riseuplabs.com)."
     },
     {
-      "id": "aud-1794538402601",
-      "timestamp": "2026-11-13T02:53:22.602Z",
+      "id": "aud-1794595001355",
+      "timestamp": "2026-11-13T18:36:41.355Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Activate Account",
       "entity": "User",
-      "entityId": "usr-1794538402491",
+      "entityId": "usr-1794595001259",
       "details": "Activated account for Nafis Sadik (nafis.sadik@riseuplabs.com)."
     },
     {
-      "id": "aud-1794538402595",
-      "timestamp": "2026-11-13T02:53:22.595Z",
+      "id": "aud-1794595001346",
+      "timestamp": "2026-11-13T18:36:41.346Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Add Employee Account",
       "entity": "Organization",
-      "entityId": "usr-1794538402491",
+      "entityId": "usr-1794595001259",
       "details": "Added new employee Nafis Sadik (nafis.sadik@riseuplabs.com) to Engineering. Reporting to Tariq Ahmed."
     },
     {
-      "id": "aud-1794538402440",
-      "timestamp": "2026-11-13T02:53:22.440Z",
+      "id": "aud-1794595001200",
+      "timestamp": "2026-11-13T18:36:41.200Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Approve & Assign Access",
       "entity": "AccessRequest",
-      "entityId": "acc-req-1794538402428",
+      "entityId": "acc-req-1794595001190",
       "details": "Approved request ACC-2026-017 and assigned account dev.ai1@riseuplabs.com to Kazi Fahim until 2027-02-15."
     },
     {
-      "id": "aud-1794538402429",
-      "timestamp": "2026-11-13T02:53:22.429Z",
+      "id": "aud-1794595001191",
+      "timestamp": "2026-11-13T18:36:41.191Z",
       "userId": "usr-5",
       "userName": "Kazi Fahim",
       "action": "Submit Tool Access Request",
       "entity": "AccessRequest",
-      "entityId": "acc-req-1794538402428",
+      "entityId": "acc-req-1794595001190",
       "details": "Kazi Fahim submitted access request ACC-2026-017 for ChatGPT Team / Plus (Shared Team Seat). Reason: Project Requirement."
     },
     {
-      "id": "aud-1794538402414",
-      "timestamp": "2026-11-13T02:53:22.414Z",
+      "id": "aud-1794595001178",
+      "timestamp": "2026-11-13T18:36:41.178Z",
       "userId": "usr-admin",
       "userName": "Administrator",
       "action": "Archive Predefined Access Reason",
       "entity": "Access Management",
-      "entityId": "rsn-1794538402385",
+      "entityId": "rsn-1794595001161",
       "details": "Archived predefined access reason: Security Vulnerability Patching (High Priority)"
     },
     {
-      "id": "aud-1794538402398",
-      "timestamp": "2026-11-13T02:53:22.398Z",
+      "id": "aud-1794595001172",
+      "timestamp": "2026-11-13T18:36:41.172Z",
       "userId": "usr-admin",
       "userName": "Administrator",
       "action": "Update Predefined Access Reason",
       "entity": "Access Management",
-      "entityId": "rsn-1794538402385",
+      "entityId": "rsn-1794595001161",
       "details": "Updated predefined access reason: Security Vulnerability Patching (High Priority)"
     },
     {
-      "id": "aud-1794538402386",
-      "timestamp": "2026-11-13T02:53:22.386Z",
+      "id": "aud-1794595001161",
+      "timestamp": "2026-11-13T18:36:41.161Z",
       "userId": "usr-admin",
       "userName": "Administrator",
       "action": "Create Predefined Access Reason",
       "entity": "Access Management",
-      "entityId": "rsn-1794538402385",
+      "entityId": "rsn-1794595001161",
       "details": "Created predefined access reason: Security Vulnerability Patching"
     },
     {
-      "id": "aud-1794538402245",
-      "timestamp": "2026-11-13T02:53:22.245Z",
+      "id": "aud-1794595001048",
+      "timestamp": "2026-11-13T18:36:41.048Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Revoke Account Access",
       "entity": "Access Management",
-      "entityId": "asgn-1794538402214",
+      "entityId": "asgn-1794595001025",
       "details": "Revoked access on ChatGPT Team / Plus for Sarah Lin. Reason: Project completed."
     },
     {
-      "id": "aud-1794538402230",
-      "timestamp": "2026-11-13T02:53:22.230Z",
+      "id": "aud-1794595001040",
+      "timestamp": "2026-11-13T18:36:41.040Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Extend Account Access",
       "entity": "Access Management",
-      "entityId": "asgn-1794538402214",
+      "entityId": "asgn-1794595001025",
       "details": "Extended access on ChatGPT Team / Plus for Sarah Lin from 2026-12-15 to 2027-01-15. Reason: N/A."
     },
     {
-      "id": "aud-1794538402215",
-      "timestamp": "2026-11-13T02:53:22.215Z",
+      "id": "aud-1794595001029",
+      "timestamp": "2026-11-13T18:36:41.029Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Grant Account Access",
       "entity": "AccessAssignment",
-      "entityId": "asgn-1794538402214",
+      "entityId": "asgn-1794595001025",
       "details": "Granted user access to ChatGPT Team / Plus (dev.ai1@riseuplabs.com) for Sarah Lin."
     },
     {
-      "id": "aud-1794538402193",
-      "timestamp": "2026-11-13T02:53:22.193Z",
+      "id": "aud-1794595001005",
+      "timestamp": "2026-11-13T18:36:41.005Z",
       "userId": "usr-1",
       "userName": "Sarah Lin",
       "action": "Card Reveal - Unauthorized",
@@ -2594,8 +3024,8 @@
       "details": "Unauthorized attempt by Sarah Lin to reveal card AWS & Cloud Primary Visa (Not authorized by owner)."
     },
     {
-      "id": "aud-1794538402086",
-      "timestamp": "2026-11-13T02:53:22.086Z",
+      "id": "aud-1794595000907",
+      "timestamp": "2026-11-13T18:36:40.907Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Visibility Revoked",
@@ -2604,8 +3034,8 @@
       "details": "Revoked visibility permission for user Sarah Lin on card AWS & Cloud Primary Visa."
     },
     {
-      "id": "aud-1794538402079",
-      "timestamp": "2026-11-13T02:53:22.079Z",
+      "id": "aud-1794595000895",
+      "timestamp": "2026-11-13T18:36:40.895Z",
       "userId": "usr-1",
       "userName": "Sarah Lin",
       "action": "Card Reveal - Unauthorized",
@@ -2614,8 +3044,8 @@
       "details": "Unauthorized attempt by Sarah Lin to reveal card Local Currency BDT Operational Card (Not authorized by owner)."
     },
     {
-      "id": "aud-1794538401976",
-      "timestamp": "2026-11-13T02:53:21.976Z",
+      "id": "aud-1794595000804",
+      "timestamp": "2026-11-13T18:36:40.804Z",
       "userId": "usr-1",
       "userName": "Sarah Lin",
       "action": "Card Information Revealed",
@@ -2624,8 +3054,8 @@
       "details": "Card AWS & Cloud Primary Visa revealed to Sarah Lin following password authentication."
     },
     {
-      "id": "aud-1794538401874",
-      "timestamp": "2026-11-13T02:53:21.874Z",
+      "id": "aud-1794595000714",
+      "timestamp": "2026-11-13T18:36:40.714Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Visibility Granted",
@@ -2634,8 +3064,8 @@
       "details": "Granted visibility permission for user Sarah Lin on card AWS & Cloud Primary Visa."
     },
     {
-      "id": "aud-1794538401860",
-      "timestamp": "2026-11-13T02:53:21.860Z",
+      "id": "aud-1794595000702",
+      "timestamp": "2026-11-13T18:36:40.702Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Card Reveal - Unauthorized",
@@ -2644,8 +3074,8 @@
       "details": "Unauthorized attempt by Abdullah Nahian to reveal card AWS & Cloud Primary Visa (Not authorized by owner)."
     },
     {
-      "id": "aud-1794538401748",
-      "timestamp": "2026-11-13T02:53:21.748Z",
+      "id": "aud-1794595000594",
+      "timestamp": "2026-11-13T18:36:40.594Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Reveal - Password Failed",
@@ -2654,8 +3084,8 @@
       "details": "Failed password verification attempting to reveal card AWS & Cloud Primary Visa"
     },
     {
-      "id": "aud-1794538401623",
-      "timestamp": "2026-11-13T02:53:21.623Z",
+      "id": "aud-1794595000474",
+      "timestamp": "2026-11-13T18:36:40.474Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Information Revealed",
@@ -2664,8 +3094,8 @@
       "details": "Card AWS & Cloud Primary Visa revealed to Wasiur Rahman following password authentication."
     },
     {
-      "id": "aud-1794538401511",
-      "timestamp": "2026-11-13T02:53:21.511Z",
+      "id": "aud-1794595000351",
+      "timestamp": "2026-11-13T18:36:40.351Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Failed Login Attempt",
@@ -2674,8 +3104,8 @@
       "details": "Failed password attempt for user wasiur@riseuplabs.com"
     },
     {
-      "id": "aud-1794538401373",
-      "timestamp": "2026-11-13T02:53:21.373Z",
+      "id": "aud-1794595000210",
+      "timestamp": "2026-11-13T18:36:40.210Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "User Login",
@@ -2740,287 +3170,5 @@
     "cardMaskTimeoutSeconds": 30,
     "appName": "RLTSMS",
     "companyName": "Riseup Labs"
-  },
-  "permissions": [
-    {
-      "id": "perm-1",
-      "code": "dashboard:view",
-      "name": "View Dashboard",
-      "module": "Dashboard",
-      "description": "Access standard dashboard overview and analytics",
-      "isSystem": true
-    },
-    {
-      "id": "perm-2",
-      "code": "dashboard:executive",
-      "name": "Executive Overview",
-      "module": "Dashboard",
-      "description": "View high-level executive and cross-departmental financial KPIs",
-      "isSystem": true
-    },
-    {
-      "id": "perm-3",
-      "code": "requisitions:view",
-      "name": "View Requisitions",
-      "module": "Requisitions",
-      "description": "View purchase requisition records and details",
-      "isSystem": true
-    },
-    {
-      "id": "perm-4",
-      "code": "requisitions:submit",
-      "name": "Submit Requisition",
-      "module": "Requisitions",
-      "description": "Create and submit new tool or service purchase requisitions",
-      "isSystem": true
-    },
-    {
-      "id": "perm-5",
-      "code": "requisitions:manage",
-      "name": "Manage Requisitions",
-      "module": "Requisitions",
-      "description": "Cancel, edit, or override purchase requisitions",
-      "isSystem": true
-    },
-    {
-      "id": "perm-6",
-      "code": "approvals:team",
-      "name": "Team Lead Approvals",
-      "module": "Approvals",
-      "description": "Review and approve level 1 team purchase & access requests",
-      "isSystem": true
-    },
-    {
-      "id": "perm-7",
-      "code": "approvals:department",
-      "name": "Department Lead Approvals",
-      "module": "Approvals",
-      "description": "Review and approve level 2 department requisitions",
-      "isSystem": true
-    },
-    {
-      "id": "perm-8",
-      "code": "approvals:operations",
-      "name": "Operations Approvals",
-      "module": "Approvals",
-      "description": "Provide operational and budgetary authorization",
-      "isSystem": true
-    },
-    {
-      "id": "perm-9",
-      "code": "approvals:finance",
-      "name": "Finance Approvals",
-      "module": "Approvals",
-      "description": "Authorize budget allocations and financial disbursements",
-      "isSystem": true
-    },
-    {
-      "id": "perm-10",
-      "code": "services:view",
-      "name": "View Catalogue",
-      "module": "Services",
-      "description": "Browse approved catalogue services and tools",
-      "isSystem": true
-    },
-    {
-      "id": "perm-11",
-      "code": "services:write",
-      "name": "Manage Catalogue",
-      "module": "Services",
-      "description": "Add, update, or archive catalogue services & plans",
-      "isSystem": true
-    },
-    {
-      "id": "perm-12",
-      "code": "accounts:view",
-      "name": "View Accounts",
-      "module": "Accounts",
-      "description": "View software accounts and seat assignments",
-      "isSystem": true
-    },
-    {
-      "id": "perm-13",
-      "code": "accounts:write",
-      "name": "Manage Accounts",
-      "module": "Accounts",
-      "description": "Register service accounts and manage license seats",
-      "isSystem": true
-    },
-    {
-      "id": "perm-14",
-      "code": "access:view",
-      "name": "View Sharing Hub",
-      "module": "Access Sharing",
-      "description": "View shared accounts, upcoming events, and access allocations",
-      "isSystem": true
-    },
-    {
-      "id": "perm-15",
-      "code": "access:request",
-      "name": "Request Tool Access",
-      "module": "Access Sharing",
-      "description": "Submit access requests for company shared software seats",
-      "isSystem": true
-    },
-    {
-      "id": "perm-16",
-      "code": "access:approve",
-      "name": "Approve Access Requests",
-      "module": "Access Sharing",
-      "description": "Review and approve employee access sharing requests",
-      "isSystem": true
-    },
-    {
-      "id": "perm-17",
-      "code": "access:assign",
-      "name": "Provision Access",
-      "module": "Access Sharing",
-      "description": "Assign, extend, or revoke shared account seats for users",
-      "isSystem": true
-    },
-    {
-      "id": "perm-18",
-      "code": "purchases:view",
-      "name": "View Purchases",
-      "module": "Procurement",
-      "description": "View procurement logs and order records",
-      "isSystem": true
-    },
-    {
-      "id": "perm-19",
-      "code": "purchases:write",
-      "name": "Execute Purchases",
-      "module": "Procurement",
-      "description": "Complete purchases, record invoices, and register accounts",
-      "isSystem": true
-    },
-    {
-      "id": "perm-20",
-      "code": "subscriptions:view",
-      "name": "View Subscriptions",
-      "module": "Subscriptions",
-      "description": "Track subscription renewals and billing cycles",
-      "isSystem": true
-    },
-    {
-      "id": "perm-21",
-      "code": "subscriptions:write",
-      "name": "Manage Subscriptions",
-      "module": "Subscriptions",
-      "description": "Update renewal terms, cancel, or record subscription payments",
-      "isSystem": true
-    },
-    {
-      "id": "perm-22",
-      "code": "expenses:view",
-      "name": "View Expenses",
-      "module": "Finance",
-      "description": "View company tool & subscription expense items",
-      "isSystem": true
-    },
-    {
-      "id": "perm-23",
-      "code": "expenses:write",
-      "name": "Manage Expenses",
-      "module": "Finance",
-      "description": "Record and categorize expenditures",
-      "isSystem": true
-    },
-    {
-      "id": "perm-24",
-      "code": "finance:view",
-      "name": "Financial Analytics",
-      "module": "Finance",
-      "description": "Comprehensive financial variance and budget forecasting",
-      "isSystem": true
-    },
-    {
-      "id": "perm-25",
-      "code": "cards:view_masked",
-      "name": "View Masked Cards",
-      "module": "Payment Cards",
-      "description": "View masked card details and holder information",
-      "isSystem": true
-    },
-    {
-      "id": "perm-26",
-      "code": "cards:reveal_full",
-      "name": "Reveal Card Password",
-      "module": "Payment Cards",
-      "description": "Authenticate with password to reveal unmasked card details",
-      "isSystem": true
-    },
-    {
-      "id": "perm-27",
-      "code": "cards:manage",
-      "name": "Manage Payment Cards",
-      "module": "Payment Cards",
-      "description": "Add, update, or assign permissions for corporate payment cards",
-      "isSystem": true
-    },
-    {
-      "id": "perm-28",
-      "code": "org:view",
-      "name": "View Organization",
-      "module": "Organization",
-      "description": "View department structure, teams, and employee roster",
-      "isSystem": true
-    },
-    {
-      "id": "perm-29",
-      "code": "org:manage",
-      "name": "Manage Organization",
-      "module": "Organization",
-      "description": "Create, edit, and delete departments, teams, and manage employees",
-      "isSystem": true
-    },
-    {
-      "id": "perm-30",
-      "code": "rbac:view",
-      "name": "View Roles & RBAC",
-      "module": "RBAC",
-      "description": "View role definitions, permissions matrix, and user assignments",
-      "isSystem": true
-    },
-    {
-      "id": "perm-31",
-      "code": "rbac:manage",
-      "name": "Manage Roles & RBAC",
-      "module": "RBAC",
-      "description": "Create, edit, and delete dynamic roles and assign permissions",
-      "isSystem": true
-    },
-    {
-      "id": "perm-32",
-      "code": "workflows:write",
-      "name": "Configure Workflows",
-      "module": "Workflows",
-      "description": "Design and customize approval workflows and stages",
-      "isSystem": true
-    },
-    {
-      "id": "perm-33",
-      "code": "reports:view",
-      "name": "View & Export Reports",
-      "module": "Reports",
-      "description": "Generate and download CSV reports and audit analytics",
-      "isSystem": true
-    },
-    {
-      "id": "perm-34",
-      "code": "audit:view",
-      "name": "Inspect Audit Logs",
-      "module": "Audit",
-      "description": "View immutable security and activity audit ledger",
-      "isSystem": true
-    },
-    {
-      "id": "perm-35",
-      "code": "settings:manage",
-      "name": "System Settings",
-      "module": "Settings",
-      "description": "Modify system parameters and email notification templates",
-      "isSystem": true
-    }
-  ]
+  }
 }

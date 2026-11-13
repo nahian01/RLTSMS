@@ -581,53 +581,6 @@ export const LoginPage: React.FC = () => {
                   <span>Secure access to your company workspace.</span>
                 </div>
               </div>
-
-              {/* Discreet Pre-Seeded Accounts Assistant for Testing / Admin */}
-              <div className="pt-2">
-                <details className="text-[11px] text-[#929CB2] bg-[#141E31]/60 border border-[#26344D]/60 rounded-xl p-3 cursor-pointer group">
-                  <summary className="font-semibold text-slate-300 flex items-center justify-between select-none">
-                    <span>Initial Test &amp; Administrative Credentials</span>
-                    <span className="text-[10px] text-[#6575FF] group-open:rotate-180 transition-transform">▼</span>
-                  </summary>
-                  <div className="mt-2.5 space-y-1.5 text-[11px] font-mono text-slate-400 border-t border-[#26344D]/40 pt-2">
-                    <p className="font-sans text-[10px] text-slate-400">
-                      Standard password for foundational accounts: <strong className="text-white font-mono">RiseupLabs@2026</strong>
-                    </p>
-                    <div className="flex flex-col gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('nahian@riseuplabs.com');
-                          setPassword('RiseupLabs@2026');
-                        }}
-                        className="text-left text-sky-400 hover:underline py-0.5"
-                      >
-                        • Super Admin: nahian@riseuplabs.com
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('wasiur@riseuplabs.com');
-                          setPassword('RiseupLabs@2026');
-                        }}
-                        className="text-left text-sky-400 hover:underline py-0.5"
-                      >
-                        • Operations: wasiur@riseuplabs.com
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEmail('sarah.lin@riseuplabs.com');
-                          setPassword('RiseupLabs@2026');
-                        }}
-                        className="text-left text-sky-400 hover:underline py-0.5"
-                      >
-                        • Employee: sarah.lin@riseuplabs.com
-                      </button>
-                    </div>
-                  </div>
-                </details>
-              </div>
             </div>
           ) : (
             /* =================================================================== */
@@ -761,3 +714,4 @@ export const LoginPage: React.FC = () => {
     </main>
   );
 };
+
