@@ -19,6 +19,8 @@ import {
   ChevronRight,
   Workflow,
   Building,
+  Shield,
+  Network,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -125,11 +127,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
       label: 'Governance & System',
       items: [
         {
-          id: 'organization',
-          label: 'Organization & Employees',
-          icon: Building,
+          id: 'rbac',
+          label: 'RBAC & Permissions',
+          icon: Shield,
+        },
+        {
+          id: 'org-structure',
+          label: 'Dept & Teams',
+          icon: Network,
+        },
+        {
+          id: 'employees',
+          label: 'Employees',
+          icon: Users,
           badge: users.filter((u) => u.accountStatus === 'Active').length,
           badgeColor: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200',
+        },
+        {
+          id: 'organization',
+          label: 'Org Hierarchy',
+          icon: Building,
         },
         {
           id: 'reports',

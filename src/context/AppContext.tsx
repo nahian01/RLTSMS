@@ -24,6 +24,7 @@ import {
   AccountAccessHistory,
   PredefinedAccessReason,
   RoleDefinition,
+  PermissionDefinition,
   EmailTemplate,
   EmailDeliveryLog,
 } from '../types';
@@ -51,6 +52,7 @@ import {
   INITIAL_PREDEFINED_REASONS,
   INITIAL_ACCESS_HISTORY,
   INITIAL_ROLES,
+  INITIAL_PERMISSIONS,
 } from '../data/mockData';
 
 interface AppContextType {
@@ -70,6 +72,7 @@ interface AppContextType {
   departments: Department[];
   teams: Team[];
   roles: RoleDefinition[];
+  permissions: PermissionDefinition[];
   categories: ServiceCategory[];
   services: CatalogueService[];
   accounts: ServiceAccount[];
@@ -237,7 +240,23 @@ interface AppContextType {
   simulateActivateAccount: (userId: string) => void;
   toggleUserStatus: (userId: string) => void;
   createDepartment: (dept: Omit<Department, 'id' | 'teamsCount' | 'employeesCount'>) => void;
+  updateDepartment: (id: string, data: Partial<Department>) => Promise<Department | null>;
+  deleteDepartment: (id: string) => Promise<{ success: boolean; message: string; unassignedEmployeesCount?: number }>;
   createTeam: (team: Omit<Team, 'id' | 'membersCount'>) => void;
+  updateTeam: (id: string, data: Partial<Team>) => Promise<Team | null>;
+  deleteTeam: (id: string) => Promise<{ success: boolean; message: string; unassignedEmployeesCount?: number }>;
+  updateEmployee: (userId: string, data: Partial<User>) => Promise<User | null>;
+
+  // RBAC & Permissions Management
+  createRole: (data: { name: string; description: string; permissions: string[] }) => Promise<RoleDefinition>;
+  updateRole: (id: string, updates: Partial<RoleDefinition>) => Promise<RoleDefinition | null>;
+  deleteRole: (id: string) => Promise<{ success: boolean; message: string; affectedUsersCount?: number }>;
+  createPermission: (data: { code: string; name: string; module: string; description: string }) => Promise<PermissionDefinition>;
+  updatePermission: (id: string, updates: Partial<PermissionDefinition>) => Promise<PermissionDefinition | null>;
+  deletePermission: (id: string) => Promise<{ success: boolean; message: string }>;
+  updateUserRoles: (userId: string, newRoles: UserRole[]) => Promise<User | null>;
+  getUserPermissions: (user?: User) => string[];
+  hasPermission: (permissionCode: string, user?: User) => boolean;
 
   // Notifications & Reminders
   markNotificationRead: (id: string) => void;
@@ -276,8 +295,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUserId, setCurrentUserId] = useState<string>(() => loadStored('current_user_id', 'usr-admin'));
   const [departments, setDepartments] = useState<Department[]>(() => loadStored('departments', INITIAL_DEPARTMENTS));
   const [teams, setTeams] = useState<Team[]>(() => loadStored('teams', INITIAL_TEAMS));
-  const [roles] = useState<RoleDefinition[]>(() => loadStored('roles', INITIAL_ROLES));
-  const [categories, setCategories] = useState<ServiceCategory[]>(() => loadStored('categories', INITIAL_CATEGORIES));
+  const [roles, setRoles] = useState<RoleDefinition[]>(() => loadStored('roles', INITIAL_ROLES));
+  const [permissions, setPermissions] = useState<PermissionDefinition[]>(() => loadStored('permissions', INITIAL_PERMISSIONS));  const [categories, setCategories] = useState<ServiceCategory[]>(() => loadStored('categories', INITIAL_CATEGORIES));
   const [services, setServices] = useState<CatalogueService[]>(() => loadStored('services', INITIAL_SERVICES));
   const [accounts, setAccounts] = useState<ServiceAccount[]>(() => loadStored('accounts', INITIAL_ACCOUNTS));
   const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => loadStored('subscriptions', INITIAL_SUBSCRIPTIONS));
@@ -339,6 +358,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('rltsms_users', JSON.stringify(users));
   }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('rltsms_departments', JSON.stringify(departments));
+  }, [departments]);
+
+  useEffect(() => {
+    localStorage.setItem('rltsms_teams', JSON.stringify(teams));
+  }, [teams]);
+
+  useEffect(() => {
+    localStorage.setItem('rltsms_roles', JSON.stringify(roles));
+  }, [roles]);
+
+  useEffect(() => {
+    localStorage.setItem('rltsms_permissions', JSON.stringify(permissions));
+  }, [permissions]);
 
   useEffect(() => {
     localStorage.setItem('rltsms_services', JSON.stringify(services));
@@ -2203,6 +2238,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const updateDepartment = async (id: string, data: Partial<Department>): Promise<Department | null> => {
+    let updatedDept: Department | null = null;
+    setDepartments((prev) => prev.map((d) => {
+      if (d.id !== id) return d;
+      const nd = { ...d, ...data };
+      updatedDept = nd;
+      return nd;
+    }));
+    // Cascade name change to teams and users
+    if (data.name) {
+      setTeams((prev) => prev.map((t) => t.departmentId === id ? { ...t, departmentName: data.name! } : t));
+      setUsers((prev) => prev.map((u) => u.departmentId === id ? { ...u, departmentName: data.name! } : u));
+    }
+    addAuditLog({ action: 'DEPARTMENT_UPDATED', entity: 'Department', entityId: id, details: `Updated department: ${data.name || id}` });
+    return updatedDept;
+  };
+
+  const deleteDepartment = async (id: string): Promise<{ success: boolean; message: string; unassignedEmployeesCount?: number }> => {
+    const dept = departments.find((d) => d.id === id);
+    if (!dept) return { success: false, message: 'Department not found.' };
+    if (dept.name === 'Engineering' || dept.name === 'Finance & Admin') {
+      // Safety check: allow delete anyway (admin decision), just warn
+    }
+    let unassignedEmployeesCount = 0;
+    // Unassign all employees in this department
+    setUsers((prev) => prev.map((u) => {
+      if (u.departmentId === id) {
+        unassignedEmployeesCount++;
+        return { ...u, departmentId: '', departmentName: 'Unassigned', teamId: undefined, teamName: undefined };
+      }
+      return u;
+    }));
+    // Remove all teams under this department
+    setTeams((prev) => prev.filter((t) => t.departmentId !== id));
+    // Remove department itself
+    setDepartments((prev) => prev.filter((d) => d.id !== id));
+    addAuditLog({ action: 'DEPARTMENT_DELETED', entity: 'Department', entityId: id, details: `Deleted department "${dept.name}". Auto-unassigned ${unassignedEmployeesCount} employee(s).` });
+    return { success: true, message: `Department "${dept.name}" deleted. ${unassignedEmployeesCount} employee(s) unassigned.`, unassignedEmployeesCount };
+  };
+
   const createTeam = (team: Omit<Team, 'id' | 'membersCount'>) => {
     const newTeam: Team = {
       id: `team-${Date.now()}`,
@@ -2219,6 +2294,196 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId: newTeam.id,
       details: `Created team: ${newTeam.name} under ${newTeam.departmentName}`,
     });
+  };
+
+  const updateTeam = async (id: string, data: Partial<Team>): Promise<Team | null> => {
+    let updatedTeam: Team | null = null;
+    setTeams((prev) => prev.map((t) => {
+      if (t.id !== id) return t;
+      const nt = { ...t, ...data };
+      updatedTeam = nt;
+      return nt;
+    }));
+    if (data.name) {
+      setUsers((prev) => prev.map((u) => u.teamId === id ? { ...u, teamName: data.name! } : u));
+    }
+    addAuditLog({ action: 'TEAM_UPDATED', entity: 'Team', entityId: id, details: `Updated team: ${data.name || id}` });
+    return updatedTeam;
+  };
+
+  const deleteTeam = async (id: string): Promise<{ success: boolean; message: string; unassignedEmployeesCount?: number }> => {
+    const team = teams.find((t) => t.id === id);
+    if (!team) return { success: false, message: 'Team not found.' };
+    let unassignedEmployeesCount = 0;
+    setUsers((prev) => prev.map((u) => {
+      if (u.teamId === id) {
+        unassignedEmployeesCount++;
+        return { ...u, teamId: undefined, teamName: undefined };
+      }
+      return u;
+    }));
+    setTeams((prev) => prev.filter((t) => t.id !== id));
+    setDepartments((prev) => prev.map((d) => d.id === team.departmentId ? { ...d, teamsCount: Math.max(0, d.teamsCount - 1) } : d));
+    addAuditLog({ action: 'TEAM_DELETED', entity: 'Team', entityId: id, details: `Deleted team "${team.name}". Auto-unassigned ${unassignedEmployeesCount} employee(s).` });
+    return { success: true, message: `Team "${team.name}" deleted. ${unassignedEmployeesCount} employee(s) unassigned from team.`, unassignedEmployeesCount };
+  };
+
+  const updateEmployee = async (userId: string, data: Partial<User>): Promise<User | null> => {
+    let updated: User | null = null;
+    setUsers((prev) => prev.map((u) => {
+      if (u.id !== userId) return u;
+      // Resolve names from IDs if changed
+      let deptName = u.departmentName;
+      let teamName = u.teamName;
+      if (data.departmentId !== undefined) {
+        const d = departments.find((dept) => dept.id === data.departmentId);
+        deptName = d ? d.name : 'Unassigned';
+      }
+      if (data.teamId !== undefined) {
+        const t = teams.find((tm) => tm.id === data.teamId);
+        teamName = t ? t.name : undefined;
+      }
+      const nu = { ...u, ...data, departmentName: deptName, teamName };
+      updated = nu;
+      return nu;
+    }));
+    addAuditLog({ action: 'EMPLOYEE_UPDATED', entity: 'User', entityId: userId, details: `Updated employee profile ${userId}.` });
+    return updated;
+  };
+
+  // ============================================================================
+  // RBAC: Dynamic Roles & Permissions
+  // ============================================================================
+  const getUserPermissions = (user?: User): string[] => {
+    const target = user || currentUser;
+    if (!target) return [];
+    const allPerms = new Set<string>();
+    target.roles.forEach((roleName) => {
+      const roleDef = roles.find((r) => r.name === roleName);
+      if (roleDef) {
+        if (roleDef.permissions.includes('*')) {
+          // Super Admin: all permissions
+          permissions.forEach((p) => allPerms.add(p.code));
+          allPerms.add('*');
+          return;
+        }
+        roleDef.permissions.forEach((p) => allPerms.add(p));
+      }
+    });
+    return Array.from(allPerms);
+  };
+
+  const hasPermission = (permissionCode: string, user?: User): boolean => {
+    const userPerms = getUserPermissions(user);
+    return userPerms.includes('*') || userPerms.includes(permissionCode);
+  };
+
+  const createRole = async (data: { name: string; description: string; permissions: string[] }): Promise<RoleDefinition> => {
+    const newRole: RoleDefinition = {
+      id: `role-${Date.now()}`,
+      name: data.name as UserRole,
+      description: data.description,
+      isSystem: false,
+      permissions: data.permissions,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setRoles((prev) => [...prev, newRole]);
+    addAuditLog({ action: 'ROLE_CREATED', entity: 'RBAC', entityId: newRole.id, details: `Created role "${newRole.name}" with ${newRole.permissions.length} permissions.` });
+    return newRole;
+  };
+
+  const updateRole = async (id: string, updates: Partial<RoleDefinition>): Promise<RoleDefinition | null> => {
+    let updated: RoleDefinition | null = null;
+    const oldRole = roles.find((r) => r.id === id);
+    setRoles((prev) => prev.map((r) => {
+      if (r.id !== id) return r;
+      const nr = { ...r, ...updates, updatedAt: new Date().toISOString() };
+      updated = nr;
+      return nr;
+    }));
+    // Cascade role name change to users
+    if (updates.name && oldRole && updates.name !== oldRole.name) {
+      setUsers((prev) => prev.map((u) => ({
+        ...u,
+        roles: u.roles.map((rn) => rn === oldRole.name ? updates.name! : rn),
+      })));
+    }
+    addAuditLog({ action: 'ROLE_UPDATED', entity: 'RBAC', entityId: id, details: `Updated role "${updates.name || oldRole?.name || id}".` });
+    return updated;
+  };
+
+  const deleteRole = async (id: string): Promise<{ success: boolean; message: string; affectedUsersCount?: number }> => {
+    const role = roles.find((r) => r.id === id);
+    if (!role) return { success: false, message: 'Role not found.' };
+    if (role.name === 'Super Admin') return { success: false, message: 'Cannot delete root Super Admin role.' };
+    let affectedUsersCount = 0;
+    setUsers((prev) => prev.map((u) => {
+      if (u.roles.includes(role.name)) {
+        affectedUsersCount++;
+        const newRoles = u.roles.filter((rn) => rn !== role.name);
+        return { ...u, roles: newRoles.length > 0 ? newRoles : ['Employee'] };
+      }
+      return u;
+    }));
+    setRoles((prev) => prev.filter((r) => r.id !== id));
+    addAuditLog({ action: 'ROLE_DELETED', entity: 'RBAC', entityId: id, details: `Deleted role "${role.name}". Unassigned from ${affectedUsersCount} user(s).` });
+    return { success: true, message: `Role "${role.name}" deleted. Unassigned from ${affectedUsersCount} user(s).`, affectedUsersCount };
+  };
+
+  const createPermission = async (data: { code: string; name: string; module: string; description: string }): Promise<PermissionDefinition> => {
+    const newPerm: PermissionDefinition = {
+      id: `perm-${Date.now()}`,
+      code: data.code.trim().toLowerCase(),
+      name: data.name.trim(),
+      module: data.module.trim(),
+      description: data.description.trim(),
+      isSystem: false,
+    };
+    setPermissions((prev) => [...prev, newPerm]);
+    addAuditLog({ action: 'PERMISSION_CREATED', entity: 'RBAC', entityId: newPerm.id, details: `Created permission [${newPerm.code}] "${newPerm.name}".` });
+    return newPerm;
+  };
+
+  const updatePermission = async (id: string, updates: Partial<PermissionDefinition>): Promise<PermissionDefinition | null> => {
+    const oldPerm = permissions.find((p) => p.id === id);
+    let updated: PermissionDefinition | null = null;
+    setPermissions((prev) => prev.map((p) => {
+      if (p.id !== id) return p;
+      const np = { ...p, ...updates };
+      updated = np;
+      return np;
+    }));
+    // Cascade code change inside roles
+    if (updates.code && oldPerm && updates.code !== oldPerm.code) {
+      setRoles((prev) => prev.map((r) => ({
+        ...r,
+        permissions: r.permissions.map((c) => c === oldPerm.code ? updates.code! : c),
+      })));
+    }
+    addAuditLog({ action: 'PERMISSION_UPDATED', entity: 'RBAC', entityId: id, details: `Updated permission [${updates.code || oldPerm?.code || id}].` });
+    return updated;
+  };
+
+  const deletePermission = async (id: string): Promise<{ success: boolean; message: string }> => {
+    const perm = permissions.find((p) => p.id === id);
+    if (!perm) return { success: false, message: 'Permission not found.' };
+    setPermissions((prev) => prev.filter((p) => p.id !== id));
+    setRoles((prev) => prev.map((r) => ({ ...r, permissions: r.permissions.filter((c) => c !== perm.code) })));
+    addAuditLog({ action: 'PERMISSION_DELETED', entity: 'RBAC', entityId: id, details: `Deleted permission [${perm.code}] "${perm.name}".` });
+    return { success: true, message: `Permission "${perm.name}" deleted.` };
+  };
+
+  const updateUserRoles = async (userId: string, newRoles: UserRole[]): Promise<User | null> => {
+    let updated: User | null = null;
+    setUsers((prev) => prev.map((u) => {
+      if (u.id !== userId) return u;
+      const nu = { ...u, roles: newRoles };
+      updated = nu;
+      return nu;
+    }));
+    addAuditLog({ action: 'USER_ROLES_UPDATED', entity: 'User', entityId: userId, details: `Updated roles: [${newRoles.join(', ')}].` });
+    return updated;
   };
 
   const markNotificationRead = (id: string) => {
@@ -2293,6 +2558,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         departments,
         teams,
         roles,
+        permissions,
         categories,
         services,
         accounts,
@@ -2357,7 +2623,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         simulateActivateAccount,
         toggleUserStatus,
         createDepartment,
+        updateDepartment,
+        deleteDepartment,
         createTeam,
+        updateTeam,
+        deleteTeam,
+        updateEmployee,
+        createRole,
+        updateRole,
+        deleteRole,
+        createPermission,
+        updatePermission,
+        deletePermission,
+        updateUserRoles,
+        getUserPermissions,
+        hasPermission,
         markNotificationRead,
         markAllNotificationsRead,
         triggerMonthlyPlanningDispatch,

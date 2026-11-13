@@ -20,6 +20,7 @@ import {
   AccountAccessHistory,
   PredefinedAccessReason,
   RoleDefinition,
+  PermissionDefinition,
   EmailTemplate,
   EmailDeliveryLog,
 } from '../types';
@@ -421,17 +422,72 @@ export const INITIAL_USERS: User[] = [
   },
 ];
 
+export const INITIAL_PERMISSIONS: PermissionDefinition[] = [
+  // Dashboard
+  { id: 'perm-1', code: 'dashboard:view', name: 'View Dashboard', module: 'Dashboard', description: 'Access standard dashboard overview and analytics', isSystem: true },
+  { id: 'perm-2', code: 'dashboard:executive', name: 'Executive Overview', module: 'Dashboard', description: 'View high-level executive and cross-departmental financial KPIs', isSystem: true },
+
+  // Requisitions & Approvals
+  { id: 'perm-3', code: 'requisitions:view', name: 'View Requisitions', module: 'Requisitions', description: 'View purchase requisition records and details', isSystem: true },
+  { id: 'perm-4', code: 'requisitions:submit', name: 'Submit Requisition', module: 'Requisitions', description: 'Create and submit new tool or service purchase requisitions', isSystem: true },
+  { id: 'perm-5', code: 'requisitions:manage', name: 'Manage Requisitions', module: 'Requisitions', description: 'Cancel, edit, or override purchase requisitions', isSystem: true },
+  { id: 'perm-6', code: 'approvals:team', name: 'Team Lead Approvals', module: 'Approvals', description: 'Review and approve level 1 team purchase & access requests', isSystem: true },
+  { id: 'perm-7', code: 'approvals:department', name: 'Department Lead Approvals', module: 'Approvals', description: 'Review and approve level 2 department requisitions', isSystem: true },
+  { id: 'perm-8', code: 'approvals:operations', name: 'Operations Approvals', module: 'Approvals', description: 'Provide operational and budgetary authorization', isSystem: true },
+  { id: 'perm-9', code: 'approvals:finance', name: 'Finance Approvals', module: 'Approvals', description: 'Authorize budget allocations and financial disbursements', isSystem: true },
+
+  // Services & Accounts
+  { id: 'perm-10', code: 'services:view', name: 'View Catalogue', module: 'Services', description: 'Browse approved catalogue services and tools', isSystem: true },
+  { id: 'perm-11', code: 'services:write', name: 'Manage Catalogue', module: 'Services', description: 'Add, update, or archive catalogue services & plans', isSystem: true },
+  { id: 'perm-12', code: 'accounts:view', name: 'View Accounts', module: 'Accounts', description: 'View software accounts and seat assignments', isSystem: true },
+  { id: 'perm-13', code: 'accounts:write', name: 'Manage Accounts', module: 'Accounts', description: 'Register service accounts and manage license seats', isSystem: true },
+
+  // Access Sharing Hub
+  { id: 'perm-14', code: 'access:view', name: 'View Sharing Hub', module: 'Access Sharing', description: 'View shared accounts, upcoming events, and access allocations', isSystem: true },
+  { id: 'perm-15', code: 'access:request', name: 'Request Tool Access', module: 'Access Sharing', description: 'Submit access requests for company shared software seats', isSystem: true },
+  { id: 'perm-16', code: 'access:approve', name: 'Approve Access Requests', module: 'Access Sharing', description: 'Review and approve employee access sharing requests', isSystem: true },
+  { id: 'perm-17', code: 'access:assign', name: 'Provision Access', module: 'Access Sharing', description: 'Assign, extend, or revoke shared account seats for users', isSystem: true },
+
+  // Procurement & Subscriptions
+  { id: 'perm-18', code: 'purchases:view', name: 'View Purchases', module: 'Procurement', description: 'View procurement logs and order records', isSystem: true },
+  { id: 'perm-19', code: 'purchases:write', name: 'Execute Purchases', module: 'Procurement', description: 'Complete purchases, record invoices, and register accounts', isSystem: true },
+  { id: 'perm-20', code: 'subscriptions:view', name: 'View Subscriptions', module: 'Subscriptions', description: 'Track subscription renewals and billing cycles', isSystem: true },
+  { id: 'perm-21', code: 'subscriptions:write', name: 'Manage Subscriptions', module: 'Subscriptions', description: 'Update renewal terms, cancel, or record subscription payments', isSystem: true },
+
+  // Expenses & Payment Cards
+  { id: 'perm-22', code: 'expenses:view', name: 'View Expenses', module: 'Finance', description: 'View company tool & subscription expense items', isSystem: true },
+  { id: 'perm-23', code: 'expenses:write', name: 'Manage Expenses', module: 'Finance', description: 'Record and categorize expenditures', isSystem: true },
+  { id: 'perm-24', code: 'finance:view', name: 'Financial Analytics', module: 'Finance', description: 'Comprehensive financial variance and budget forecasting', isSystem: true },
+  { id: 'perm-25', code: 'cards:view_masked', name: 'View Masked Cards', module: 'Payment Cards', description: 'View masked card details and holder information', isSystem: true },
+  { id: 'perm-26', code: 'cards:reveal_full', name: 'Reveal Card Password', module: 'Payment Cards', description: 'Authenticate with password to reveal unmasked card details', isSystem: true },
+  { id: 'perm-27', code: 'cards:manage', name: 'Manage Payment Cards', module: 'Payment Cards', description: 'Add, update, or assign permissions for corporate payment cards', isSystem: true },
+
+  // Organization & Employees
+  { id: 'perm-28', code: 'org:view', name: 'View Organization', module: 'Organization', description: 'View department structure, teams, and employee roster', isSystem: true },
+  { id: 'perm-29', code: 'org:manage', name: 'Manage Organization', module: 'Organization', description: 'Create, edit, and delete departments, teams, and manage employees', isSystem: true },
+
+  // RBAC & Governance
+  { id: 'perm-30', code: 'rbac:view', name: 'View Roles & RBAC', module: 'RBAC', description: 'View role definitions, permissions matrix, and user assignments', isSystem: true },
+  { id: 'perm-31', code: 'rbac:manage', name: 'Manage Roles & RBAC', module: 'RBAC', description: 'Create, edit, and delete dynamic roles and assign permissions', isSystem: true },
+
+  // Workflows, Reports & System
+  { id: 'perm-32', code: 'workflows:write', name: 'Configure Workflows', module: 'Workflows', description: 'Design and customize approval workflows and stages', isSystem: true },
+  { id: 'perm-33', code: 'reports:view', name: 'View & Export Reports', module: 'Reports', description: 'Generate and download CSV reports and audit analytics', isSystem: true },
+  { id: 'perm-34', code: 'audit:view', name: 'Inspect Audit Logs', module: 'Audit', description: 'View immutable security and activity audit ledger', isSystem: true },
+  { id: 'perm-35', code: 'settings:manage', name: 'System Settings', module: 'Settings', description: 'Modify system parameters and email notification templates', isSystem: true },
+];
+
 export const INITIAL_ROLES: RoleDefinition[] = [
   { id: 'role-1', name: 'Super Admin', description: 'Complete system control, role assignments, card security policies', isSystem: true, permissions: ['*'] },
-  { id: 'role-2', name: 'System Admin', description: 'Manage users, organization units, catalogue services & workflows', isSystem: true, permissions: ['services:write', 'users:write', 'workflows:write'] },
-  { id: 'role-3', name: 'Employee', description: 'Submit purchase requisitions and request tool access', isSystem: true, permissions: ['requisitions:submit', 'access:request'] },
-  { id: 'role-4', name: 'Team Lead', description: 'Review and approve first-stage team purchase & access requests', isSystem: true, permissions: ['approvals:team', 'requisitions:submit'] },
-  { id: 'role-5', name: 'Department Lead', description: 'Review and approve department-wide requisitions & access', isSystem: true, permissions: ['approvals:department', 'reports:view'] },
-  { id: 'role-6', name: 'Operation Manager', description: 'Provide operational and budgetary purchase authorizations', isSystem: true, permissions: ['approvals:operations', 'reports:view'] },
-  { id: 'role-7', name: 'Purchaser', description: 'Complete approved requests, enter invoices, register accounts', isSystem: true, permissions: ['purchases:write', 'accounts:write'] },
-  { id: 'role-8', name: 'Finance', description: 'Financial records, payments, variance analysis and accounting', isSystem: true, permissions: ['finance:view', 'reports:view', 'expenses:view'] },
-  { id: 'role-9', name: 'Management', description: 'Summarized company expenditure and subscription overview', isSystem: true, permissions: ['reports:view', 'dashboard:executive'] },
-  { id: 'role-10', name: 'Card Information Viewer', description: 'Strictly authorized viewer of masked card details and holder data', isSystem: true, permissions: ['cards:view_masked'] },
+  { id: 'role-2', name: 'System Admin', description: 'Manage users, organization units, catalogue services & workflows', isSystem: true, permissions: ['services:view', 'services:write', 'accounts:view', 'accounts:write', 'org:view', 'org:manage', 'workflows:write', 'rbac:view', 'rbac:manage', 'settings:manage', 'reports:view', 'audit:view'] },
+  { id: 'role-3', name: 'Employee', description: 'Submit purchase requisitions and request tool access', isSystem: true, permissions: ['dashboard:view', 'requisitions:view', 'requisitions:submit', 'services:view', 'accounts:view', 'access:view', 'access:request'] },
+  { id: 'role-4', name: 'Team Lead', description: 'Review and approve first-stage team purchase & access requests', isSystem: true, permissions: ['dashboard:view', 'requisitions:view', 'requisitions:submit', 'approvals:team', 'access:view', 'access:request', 'access:approve', 'org:view'] },
+  { id: 'role-5', name: 'Department Lead', description: 'Review and approve department-wide requisitions & access', isSystem: true, permissions: ['dashboard:view', 'requisitions:view', 'requisitions:submit', 'approvals:department', 'access:view', 'access:request', 'access:approve', 'org:view', 'reports:view'] },
+  { id: 'role-6', name: 'Operation Manager', description: 'Provide operational and budgetary purchase authorizations', isSystem: true, permissions: ['dashboard:view', 'requisitions:view', 'approvals:operations', 'purchases:view', 'org:view', 'reports:view', 'access:view', 'access:approve'] },
+  { id: 'role-7', name: 'Purchaser', description: 'Complete approved requests, enter invoices, register accounts', isSystem: true, permissions: ['dashboard:view', 'requisitions:view', 'purchases:view', 'purchases:write', 'accounts:view', 'accounts:write', 'cards:view_masked', 'subscriptions:view', 'reports:view'] },
+  { id: 'role-8', name: 'Finance', description: 'Financial records, payments, variance analysis and accounting', isSystem: true, permissions: ['dashboard:view', 'finance:view', 'expenses:view', 'expenses:write', 'purchases:view', 'subscriptions:view', 'reports:view'] },
+  { id: 'role-9', name: 'Management', description: 'Summarized company expenditure and subscription overview', isSystem: true, permissions: ['dashboard:view', 'dashboard:executive', 'reports:view', 'org:view', 'finance:view', 'subscriptions:view'] },
+  { id: 'role-10', name: 'Card Information Viewer', description: 'Strictly authorized viewer of masked card details and holder data', isSystem: true, permissions: ['cards:view_masked', 'cards:reveal_full', 'reports:view'] },
 ];
 
 export const INITIAL_PREDEFINED_REASONS: PredefinedAccessReason[] = [

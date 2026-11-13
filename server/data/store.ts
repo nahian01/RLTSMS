@@ -25,6 +25,7 @@ import {
   INITIAL_PREDEFINED_REASONS,
   INITIAL_ACCESS_HISTORY,
   INITIAL_ROLES,
+  INITIAL_PERMISSIONS,
 } from '../../src/data/mockData';
 import {
   User,
@@ -49,6 +50,7 @@ import {
   AccountAccessHistory,
   PredefinedAccessReason,
   RoleDefinition,
+  PermissionDefinition,
   EmailTemplate,
   EmailDeliveryLog,
 } from '../../src/types';
@@ -81,6 +83,7 @@ export interface ServerState {
   departments: Department[];
   teams: Team[];
   roles: RoleDefinition[];
+  permissions: PermissionDefinition[];
   categories: ServiceCategory[];
   services: CatalogueService[];
   accounts: ServiceAccount[];
@@ -120,6 +123,7 @@ function createDefaultState(): ServerState {
     departments: INITIAL_DEPARTMENTS,
     teams: INITIAL_TEAMS,
     roles: INITIAL_ROLES,
+    permissions: INITIAL_PERMISSIONS,
     categories: INITIAL_CATEGORIES,
     services: INITIAL_SERVICES,
     accounts: INITIAL_ACCOUNTS,
@@ -174,6 +178,9 @@ class Store {
         }
         if (!parsed.roles) {
           parsed.roles = INITIAL_ROLES;
+        }
+        if (!parsed.permissions) {
+          parsed.permissions = INITIAL_PERMISSIONS;
         }
         if (!parsed.users || parsed.users.length !== 5) {
           parsed.users = INITIAL_USERS.map((u) => ({

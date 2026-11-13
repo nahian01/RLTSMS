@@ -19,6 +19,9 @@ import { ExpensesView } from './components/expenses/ExpensesView';
 import { VendorsView } from './components/vendors/VendorsView';
 import { PaymentCardsView } from './components/cards/PaymentCardsView';
 import { OrganizationView } from './components/organization/OrganizationView';
+import { DepartmentTeamView } from './components/organization/DepartmentTeamView';
+import { EmployeeTableView } from './components/organization/EmployeeTableView';
+import { RBACView } from './components/rbac/RBACView';
 import { WorkflowBuilderView } from './components/workflows/WorkflowBuilderView';
 import { ReportsView } from './components/reports/ReportsView';
 import { NotificationsView } from './components/notifications/NotificationsView';
@@ -57,6 +60,12 @@ const MainLayout: React.FC = () => {
         return <VendorsView />;
       case 'cards':
         return <PaymentCardsView />;
+      case 'rbac':
+        return <RBACView />;
+      case 'org-structure':
+        return <DepartmentTeamView />;
+      case 'employees':
+        return <EmployeeTableView />;
       case 'organization':
         return <OrganizationView />;
       case 'workflows':

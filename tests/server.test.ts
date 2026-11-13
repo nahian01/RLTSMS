@@ -495,6 +495,172 @@ test('Employee Management: Add User, Invitation Token & Status Toggle', async ()
   assert.strictEqual(emp2?.accountStatus, 'Inactive');
 });
 
+test('Dynamic RBAC: Create, update, assign, and delete custom roles & permissions', async () => {
+  // 1. Create a custom permission
+  const permRes = await apiRequest('/api/org/permissions', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      code: 'custom:feature_access',
+      name: 'Custom Feature Access',
+      module: 'custom',
+      description: 'Allows access to custom features',
+    },
+  });
+  assert.strictEqual(permRes.status, 201);
+  assert.strictEqual(permRes.data.code, 'custom:feature_access');
+  const permId = permRes.data.id;
+
+  // 2. Update custom permission
+  const permUpdate = await apiRequest(`/api/org/permissions/${permId}`, {
+    method: 'PUT',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Custom Feature Access Updated',
+      description: 'Updated description',
+    },
+  });
+  assert.strictEqual(permUpdate.status, 200);
+  assert.strictEqual(permUpdate.data.name, 'Custom Feature Access Updated');
+
+  // 3. Create a custom role with that permission
+  const roleRes = await apiRequest('/api/org/roles', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'QA Lead',
+      description: 'Quality Assurance Lead with custom access',
+      permissions: ['custom:feature_access', 'services:view'],
+    },
+  });
+  assert.strictEqual(roleRes.status, 201);
+  assert.strictEqual(roleRes.data.name, 'QA Lead');
+  assert.strictEqual(roleRes.data.isSystem, false);
+  const roleId = roleRes.data.id;
+
+  // 4. Update the custom role
+  const roleUpdate = await apiRequest(`/api/org/roles/${roleId}`, {
+    method: 'PUT',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      description: 'Updated QA Lead role description',
+      permissions: ['custom:feature_access', 'services:view', 'requisitions:view'],
+    },
+  });
+  assert.strictEqual(roleUpdate.status, 200);
+  assert.strictEqual(roleUpdate.data.permissions.length, 3);
+
+  // 5. Assign the role to a user
+  const assignRes = await apiRequest('/api/org/users/usr-admin/roles', {
+    method: 'PUT',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      roles: ['Super Admin', 'QA Lead'],
+    },
+  });
+  assert.strictEqual(assignRes.status, 200);
+  assert.ok(assignRes.data.roles.includes('QA Lead'));
+
+  // 6. Delete custom role (should auto-remove from assigned users)
+  const delRoleRes = await apiRequest(`/api/org/roles/${roleId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(delRoleRes.status, 200);
+  assert.strictEqual(delRoleRes.data.success, true);
+
+  // Verify role was removed from user
+  const adminUser = dbStore.getState().users.find((u) => u.id === 'usr-admin');
+  assert.ok(!adminUser?.roles.includes('QA Lead' as any), 'Deleted role should be stripped from users');
+
+  // 7. Delete custom permission
+  const delPermRes = await apiRequest(`/api/org/permissions/${permId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(delPermRes.status, 200);
+  assert.strictEqual(delPermRes.data.success, true);
+});
+
+test('Department & Team Management: Full CRUD and automatic unassignment cascade on delete', async () => {
+  // 1. Create a new Department
+  const deptRes = await apiRequest('/api/org/departments', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Game Development',
+      description: 'Interactive gaming and VR studio',
+      leadId: 'usr-admin',
+      leadName: 'Wasiur Rahman',
+      isActive: true,
+    },
+  });
+  assert.strictEqual(deptRes.status, 201);
+  const deptId = deptRes.data.id;
+  assert.strictEqual(deptRes.data.name, 'Game Development');
+
+  // 2. Create a Team under that Department
+  const teamRes = await apiRequest('/api/org/teams', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Unreal Engine Core',
+      departmentId: deptId,
+      leadId: 'usr-admin',
+      leadName: 'Wasiur Rahman',
+      isActive: true,
+    },
+  });
+  assert.strictEqual(teamRes.status, 201);
+  const teamId = teamRes.data.id;
+  assert.strictEqual(teamRes.data.name, 'Unreal Engine Core');
+  assert.strictEqual(teamRes.data.departmentId, deptId);
+
+  // 3. Assign an employee (usr-admin) to this department and team
+  const updateEmpRes = await apiRequest('/api/org/users/usr-admin', {
+    method: 'PUT',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      departmentId: deptId,
+      departmentName: 'Game Development',
+      teamId: teamId,
+      teamName: 'Unreal Engine Core',
+    },
+  });
+  assert.strictEqual(updateEmpRes.status, 200);
+  assert.strictEqual(updateEmpRes.data.departmentId, deptId);
+  assert.strictEqual(updateEmpRes.data.teamId, teamId);
+
+  // 4. Delete Team -> Employee should have teamId unassigned, but departmentId kept
+  const delTeamRes = await apiRequest(`/api/org/teams/${teamId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(delTeamRes.status, 200);
+  assert.strictEqual(delTeamRes.data.success, true);
+  assert.strictEqual(delTeamRes.data.unassignedEmployeesCount, 1);
+
+  // Verify in store: user's teamId was cleared, departmentId remains
+  let admin = dbStore.getState().users.find((u) => u.id === 'usr-admin');
+  assert.strictEqual(admin?.teamId, undefined);
+  assert.strictEqual(admin?.teamName, undefined);
+  assert.strictEqual(admin?.departmentId, deptId);
+
+  // 5. Delete Department -> Employee should have departmentId unassigned automatically
+  const delDeptRes = await apiRequest(`/api/org/departments/${deptId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(delDeptRes.status, 200);
+  assert.strictEqual(delDeptRes.data.success, true);
+  assert.strictEqual(delDeptRes.data.unassignedEmployeesCount, 1);
+
+  // Verify in store: user's departmentId was cleared
+  admin = dbStore.getState().users.find((u) => u.id === 'usr-admin');
+  assert.strictEqual(admin?.departmentId, '');
+  assert.strictEqual(admin?.departmentName, 'Unassigned');
+});
+
 test('Teardown RLTSMS Test Server', async () => {
   await new Promise<void>((resolve) => {
     server.close(() => resolve());

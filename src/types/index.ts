@@ -8,7 +8,8 @@ export type UserRole =
   | 'Purchaser'
   | 'Finance'
   | 'Management'
-  | 'Card Information Viewer';
+  | 'Card Information Viewer'
+  | (string & {});
 
 export type CardPermissionLevel =
   | 'none'
@@ -43,6 +44,8 @@ export interface RoleDefinition {
   description: string;
   isSystem: boolean;
   permissions: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PermissionDefinition {
@@ -51,6 +54,7 @@ export interface PermissionDefinition {
   name: string;
   module: string;
   description: string;
+  isSystem?: boolean;
 }
 
 export interface PredefinedAccessReason {

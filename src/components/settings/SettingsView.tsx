@@ -23,6 +23,7 @@ import { EmailTemplate, EmailDeliveryLog } from '../../types';
 
 export const SettingsView: React.FC = () => {
   const {
+    setCurrentView,
     resetToDefaults,
     emailTemplates,
     emailLogs,
@@ -273,6 +274,31 @@ export const SettingsView: React.FC = () => {
       {/* TAB 1: RBAC & PARAMETERS */}
       {activeTab === 'rbac' && (
         <div className="space-y-6">
+          {/* Dedicated RBAC Module Banner */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-2xs">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#EA5400]/10 flex items-center justify-center shrink-0">
+                <Shield className="w-6 h-6 text-[#EA5400]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Dynamic Role-Based Access Control (RBAC) Module
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+                  Roles and permissions are fully dynamic and configurable. Create custom roles, manage 35+ granular permission codes across all modules, and assign roles to team members in real-time.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentView('rbac')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#EA5400] text-white text-xs font-semibold rounded-lg hover:bg-orange-700 transition-colors shrink-0 shadow-xs cursor-pointer"
+            >
+              <Shield className="w-4 h-4" />
+              Open RBAC Manager &rarr;
+            </button>
+          </div>
+
           {/* Role-Based Access Control (RBAC) Matrix (PRD Section 2) */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-2xs overflow-hidden">
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
