@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
 import { initDatabase } from './db/connection';
 import { authRouter } from './routes/auth';
 import { cardsRouter } from './routes/cards';
@@ -59,6 +61,18 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/org', orgRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/notifications', notificationsRouter);
+
+// Serve frontend build in production / Cloudflare deployment
+const distDir = path.join(process.cwd(), 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
 
 // Central error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

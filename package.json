@@ -5,10 +5,10 @@
   "description": "RLTSMS: Your Tools. Your Services. Every Stage, Tracked. Riseup Labs Tools & Services Management System.",
   "type": "module",
   "scripts": {
-    "dev": "node ./node_modules/vite/bin/vite.js --port=3000 --host=0.0.0.0",
-    "server": "node ./node_modules/tsx/dist/cli.mjs server/index.ts",
-    "build": "node ./node_modules/vite/bin/vite.js build",
-    "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "server": "tsx server/index.ts",
+    "build": "vite build",
+    "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "node ./node_modules/typescript/bin/tsc --noEmit",
     "test": "node ./node_modules/tsx/dist/cli.mjs --test tests/**/*.test.ts"
