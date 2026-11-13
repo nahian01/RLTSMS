@@ -299,3 +299,48 @@ authRouter.post('/verify-otp', (req: Request, res: Response) => {
   otpsMap.delete(userId);
   return res.json({ success: true, message: 'OTP verification succeeded.' });
 });
+
+// POST /api/auth/forgot-password - Request password recovery instructions (Section 6.5)
+authRouter.post('/forgot-password', (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Work email is required.' });
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const state = dbStore.getState();
+  const user = state.users.find((u) => u.email.toLowerCase() === normalizedEmail);
+
+  if (user) {
+    dbStore.mutate((s) => {
+      s.emailLogs.unshift({
+        id: `elog-${Date.now()}`,
+        templateKey: 'password_reset',
+        templateName: 'Password Reset Instructions',
+        recipientEmail: user.email,
+        recipientName: user.name,
+        subject: `[RLTSMS Security] Password reset instructions for ${user.name}`,
+        status: 'Sent',
+        attemptCount: 1,
+        dispatchedAt: new Date().toISOString(),
+      });
+
+      s.auditLogs.unshift({
+        id: `aud-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        userId: user.id,
+        userName: user.name,
+        action: 'Password Reset Requested',
+        entity: 'Authentication',
+        entityId: user.id,
+        details: `Password reset instructions dispatched to ${user.email}.`,
+      });
+    });
+  }
+
+  // Security requirement: Do not reveal whether an email exists
+  return res.json({
+    success: true,
+    message: 'If an account exists for this email, password reset instructions will be sent.',
+  });
+});
