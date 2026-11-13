@@ -1,0 +1,1174 @@
+# Riseup Labs – Software & Digital Services Management System
+
+Product Requirements Document (PRD) and Software Development Specification
+
+
+
+Development baseline
+
+Internal web application
+
+
+
+## 1. Project overview
+
+The Software & Digital Services Management System is an internal web application for Riseup Labs to manage the purchasing, subscriptions, accounts, renewals, payments and expenses of company software and digital services.
+
+The system will track the complete purchasing lifecycle:
+
+Requisition → Approval → Purchase → Payment Recording → Account Registration → Subscription Tracking → Renewal → Reporting
+
+It will also manage the employees, departments, teams, vendors and approval permissions involved in this process.
+
+### Primary objectives
+
+- Maintain a centralized inventory of purchased software and digital services.
+- Track when, how and from whom each service was purchased.
+- Record subscription plans, billing cycles, actual payments and future renewal costs.
+- Track individual accounts purchased under each service.
+- Control who can submit, approve and purchase requisitions.
+- Restrict sensitive payment-card information to specifically authorized people.
+- Generate monthly and annual expenditure reports.
+- Maintain an auditable history of system activities.
+
+### Product boundaries
+
+This is not an HR, EMS, ERP or project-management system.
+
+It will not manage attendance, leave, payroll, recruitment, employee performance or daily project tasks. Employee information exists only to support purchasing, approvals, access permissions and accountability.
+
+## 2. User roles and permissions
+
+The system must use configurable role-based access control (RBAC). Permissions should be assignable to roles and, where necessary, individual users.
+
+| Role                    | Responsibilities                                                             |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| Super Admin             | Complete system control and configuration                                    |
+| System Admin            | Manage users, organization, services and system settings                     |
+| Employee                | Submit purchase requisitions and view own requests                           |
+| Team Lead               | Review and approve team requisitions                                         |
+| Department Lead         | Review and approve department requisitions                                   |
+| Operation Manager       | Provide operational approval                                                 |
+| Purchaser               | Purchase approved services and record actual purchase details                |
+| Finance                 | Review financial records and payment information within assigned permissions |
+| Management              | View authorized dashboards and reports                                       |
+| Card Information Viewer | View protected card information only when explicitly authorized              |
+
+A user may have multiple roles. Permissions must be checked on the server for every protected action.
+
+## 3. Organization management
+
+The system requires a simple organizational structure.
+
+Company → Department → Team → Employees
+
+### Department management
+
+Administrators can:
+
+- Create departments.
+- Edit department names and descriptions.
+- Assign a Department Lead or Head.
+- Activate or deactivate departments.
+
+### Team management
+
+Administrators can:
+
+- Create teams under departments.
+- Assign Team Leads.
+- Move teams between departments when authorized.
+- Activate or deactivate teams.
+
+### Employee management
+
+Employee records contain only:
+
+- Full name.
+- Designation.
+- Phone number.
+- Email address.
+- Department.
+- Team.
+- Assigned roles.
+- Account status.
+
+The system must support assigning employees as Team Leads, Department Leads, Directors and other authorized positions.
+
+### Employee invitation and activation
+
+1. An administrator creates an employee record and sends an invitation.
+2. The employee receives an email containing an account activation link.
+3. The invitation is valid for 48 hours.
+4. If not activated, the invitation becomes expired and appears in the pending-invitations list.
+5. Administrators can resend the invitation.
+6. After seven days from the original invitation, an unactivated pending account is automatically deleted.
+7. Once activated, the employee can log in and reset their own password.
+
+An expired invitation must not create an active login account. Reinvitation must not create duplicate employee records.
+
+## 4. Service and tool catalogue
+
+The catalogue is the central directory of software and digital services purchased or managed by Riseup Labs.
+
+### Categories
+
+Administrators can create, edit, deactivate and remove categories, subject to existing record references.
+
+Categories are organized in three levels: Type → Category → Subcategory. Every catalogue record belongs to one Type (Tool or Service) through its Category and Subcategory. The items listed in brackets are examples only.
+
+#### Type 1: Tools
+
+**1. AI Tools**
+
+- AI Assistants / Chatbots (ChatGPT, Claude, Gemini, Perplexity, Grok, Copilot)
+- AI Development Tools (Cursor, GitHub Copilot, Windsurf, Claude Code, Codeium, Tabnine)
+- AI App Builders (Lovable, Bolt, v0, Replit)
+- AI Image & Design (Midjourney, DALL·E, Leonardo, Adobe Firefly)
+- AI Video & Audio (Runway, ElevenLabs, HeyGen, Synthesia, Descript)
+- AI Writing & Content (Jasper, Grammarly, Copy.ai)
+- AI Automation & Agents (n8n, Zapier AI, Make)
+- AI API / Credits (OpenAI API, Anthropic API, Google AI Studio)
+
+**2. Development Tools**
+
+- Source Control & Repositories (GitLab, GitHub, Bitbucket)
+- IDEs & Editors (JetBrains, Android Studio plugins, VS Code extensions)
+- CI/CD & DevOps (GitHub Actions, CircleCI, Jenkins, Bitrise)
+- API Development & Testing (Postman, Insomnia, Swagger Hub)
+- Containers & Registry (Docker Hub, Harbor)
+- Code Quality & Review (SonarQube, CodeRabbit, Codacy)
+- Package & Artifact Registries (npm Pro, JFrog)
+- Database Tools (DBeaver Pro, TablePlus, DataGrip)
+- Mobile Development (Apple Developer Program, Google Play Console, Firebase, TestFlight)
+- Monitoring & Error Tracking (Sentry, Datadog, New Relic, LogRocket)
+- Documentation (Swagger, GitBook, ReadMe)
+
+**3. Design & Creative Tools**
+
+- UI/UX Design (Figma, Sketch, Adobe XD)
+- Graphic Design (Adobe Creative Cloud, Canva, Affinity)
+- Prototyping & Whiteboarding (Miro, FigJam, Framer)
+- Video Editing & Motion (Premiere Pro, After Effects, DaVinci Resolve)
+- 3D & Animation (Cinema 4D, Spline, Blender plugins)
+- Stock Assets (Envato Elements, Freepik, Shutterstock, Adobe Stock)
+- Fonts & Icons (Adobe Fonts, Iconscout, Flaticon)
+
+**4. Project Management & Productivity**
+
+- Task & Project Management (Jira, ClickUp, Asana, Trello, Monday)
+- Documentation & Knowledge Base (Notion, Confluence, Coda)
+- Time Tracking (Toggl, Clockify, Hubstaff)
+- Roadmap & Product Management (Productboard, Aha!)
+- Office Suites (Microsoft 365, Google Workspace)
+- PDF & Document Tools (Adobe Acrobat, DocuSign, PandaDoc)
+
+**5. Communication & Collaboration**
+
+- Team Chat (Slack, Microsoft Teams, Discord)
+- Video Conferencing (Zoom, Google Meet, Whereby)
+- Email & Business Email (Google Workspace, Zoho Mail)
+- Customer Communication (Intercom, Crisp, WhatsApp Business API)
+- Screen Recording & Async Video (Loom, Tella)
+
+**6. Testing & Quality Assurance**
+
+- Cross-Browser / Device Testing (BrowserStack, LambdaTest, Sauce Labs)
+- Test Management (TestRail, Zephyr, Qase)
+- Automation Testing (Cypress Cloud, Playwright, Selenium Grid)
+- Performance & Load Testing (k6, BlazeMeter, JMeter Cloud)
+- Bug Reporting & Feedback (BugHerd, Marker.io, Userback)
+- Mobile Testing Devices & Farms (AWS Device Farm, Firebase Test Lab)
+
+**7. Security Tools**
+
+- Password Management (1Password, Bitwarden, LastPass)
+- VPN & Network Access (NordLayer, Tailscale, Cloudflare Zero Trust)
+- Endpoint Protection / Antivirus (CrowdStrike, Bitdefender, Malwarebytes)
+- Vulnerability & Pen Testing (Burp Suite, Snyk, Acunetix)
+- Identity & Access Management (Okta, Auth0, Google Identity)
+- Secrets Management (HashiCorp Vault, Doppler)
+- SSL / Certificates (DigiCert, Sectigo, Let's Encrypt paid support)
+
+**8. Marketing, Sales & SEO Tools**
+
+- SEO & Analytics (Semrush, Ahrefs, Moz, Google Analytics 360)
+- Email Marketing (Mailchimp, Brevo, SendGrid)
+- CRM & Sales (HubSpot, Zoho CRM, Pipedrive, Salesforce)
+- Lead Generation (Apollo, LinkedIn Sales Navigator, Hunter, Lusha)
+- Social Media Management (Buffer, Hootsuite, Sprout Social)
+- Landing Pages & Websites (Webflow, Unbounce, Wix, WordPress premium plugins)
+- Survey & Forms (Typeform, Jotform, SurveyMonkey)
+
+**9. Storage, Backup & Data**
+
+- Cloud Storage (Dropbox, Google Drive, OneDrive)
+- Backup (Backblaze, Acronis)
+- Data & BI (Power BI, Tableau, Metabase, Looker Studio)
+- File Transfer (WeTransfer Pro, Filestack)
+
+**10. HR & Finance Software (company-level subscriptions only)**
+
+- Accounting & Invoicing (QuickBooks, Xero, Zoho Books)
+- Recruitment Platforms (LinkedIn Recruiter, Bdjobs, Indeed)
+- E-Signature (DocuSign, SignNow)
+
+#### Type 2: Services
+
+**11. Cloud & Hosting**
+
+- Cloud Infrastructure (AWS, Google Cloud, Azure, DigitalOcean)
+- Web Hosting (Hostinger, Bluehost, cPanel hosting)
+- App Hosting / Deployment (Vercel, Netlify, Render, Railway, Heroku)
+- Managed Databases (MongoDB Atlas, Supabase, PlanetScale, Neon)
+- CDN & Edge (Cloudflare, Fastly, Bunny)
+- VPS & Dedicated Servers (Hetzner, Linode, Contabo)
+- Object Storage (S3, Cloudflare R2, Wasabi)
+
+**12. Domain, DNS & Email Services**
+
+- Domain Registration (GoDaddy, Namecheap, Cloudflare Registrar)
+- DNS Management (Cloudflare, Route 53)
+- Transactional Email (SendGrid, Mailgun, Amazon SES, Postmark)
+- SMS / OTP Gateway (Twilio, local SMS gateways)
+- Business Phone & VoIP (Zoom Phone, local VoIP providers)
+
+**13. Branding & Social Media Services**
+
+- LinkedIn (Premium, Page Ads, Verification)
+- Facebook / Meta (Meta Verified, Business Suite, Page boosts)
+- Instagram
+- YouTube (Channel tools, YouTube Premium)
+- X (Twitter) (Premium, Ads)
+- TikTok (Business, Ads)
+- Behance / Dribbble (Pro accounts)
+- Review & Listing Platforms (Clutch, GoodFirms, Upwork, Fiverr, Glassdoor)
+
+**14. Advertising Services**
+
+- Search Ads (Google Ads, Bing Ads)
+- Social Ads (Meta Ads, LinkedIn Ads, TikTok Ads)
+- Sponsored Listings (Clutch, Upwork Connects)
+- Influencer & PR (PR distribution, sponsored posts)
+
+**15. Developer Platform & Marketplace Fees**
+
+- App Store Fees (Apple Developer, Google Play)
+- Marketplace Memberships (Upwork, Toptal, Envato author fees)
+- Software Licences & Certificates (Code signing, SSL, Microsoft partner fees)
+- API Subscriptions (Google Maps, Stripe, payment gateway fees, Twilio)
+
+**16. Professional & Business Services**
+
+- Legal & Compliance (Trademark, ISO certification, GDPR tools)
+- Training & Learning (Udemy Business, Pluralsight, Coursera, LinkedIn Learning)
+- Freelance / Outsourced Work (Design, content, translation)
+- Events & Conferences (Tickets, sponsorships, memberships)
+
+**17. Other Digital Services**
+
+- Any service or tool not covered by the categories above
+
+### Service/tool information
+
+Each catalogue record should contain:
+
+- Service/tool name.
+- Category.
+- Provider/company name.
+- Official website.
+- Description.
+- Status.
+- Created by and creation date.
+
+The catalogue should not be limited to a predefined list. Administrators must be able to add any new service or tool.
+
+A service catalogue entry is a master record. Individual purchased accounts and subscriptions are managed beneath it.
+
+## 5. Requisition management
+
+Employees with the appropriate permission can request a new purchase.
+
+### Requisition types
+
+1. New service or tool.
+2. Additional account under an existing service.
+3. New subscription or plan.
+4. Subscription renewal.
+5. Plan upgrade or change.
+
+### Requisition information
+
+| Field                  | Requirement                                     |
+| ---------------------- | ----------------------------------------------- |
+| Requisition ID         | Automatically generated                         |
+| Requester              | Logged-in employee                              |
+| Department             | Employee's department                           |
+| Team                   | Employee's team                                 |
+| Service/tool           | Existing catalogue item or proposed new item    |
+| Category               | Selected category                               |
+| Purpose                | Business justification                          |
+| Requested plan         | Expected subscription plan                      |
+| Account email          | Required when requesting a specific account     |
+| Billing cycle          | Monthly, yearly, one-time, etc.                 |
+| Estimated amount       | Expected cost                                   |
+| Currency               | Requested currency                              |
+| Expected purchase date | Requested date                                  |
+| Notes                  | Additional information                          |
+| Attachments            | Supporting quotation or document, if applicable |
+
+The requester should be able to save a draft, submit a requisition and view its status.
+
+### Requisition statuses
+
+- Draft
+- Submitted
+- Pending Approval
+- Returned for Modification
+- Approved
+- Rejected
+- Pending Purchase
+- Purchased
+- Cancelled
+
+The system must retain the complete requisition and approval history.
+
+## 6. Approval workflow builder
+
+Core functional requirement
+
+Administrators must be able to create approval workflows through a visual drag-and-drop interface.
+
+Separate workflows should be configurable for:
+
+- Purchase requisitions.
+- Access-sharing requests, if account access sharing is enabled.
+
+### Workflow creation
+
+The administrator should be able to:
+
+1. Create a workflow.
+2. Select its purpose.
+3. Search for employees by name or email.
+4. Browse employees by department or team.
+5. Drag employees or organizational roles into the workflow.
+6. Arrange approval stages.
+7. Mark each stage as Required or Optional.
+8. Define the purchaser or purchasing group after approval.
+9. Save and activate the workflow.
+
+The workflow should support employee-specific approvers as well as organizational positions such as Team Lead, Department Lead and Operation Manager.
+
+### Example workflow
+
+Purchase approval flow
+
+Employee submits requisition
+
+Team Lead
+
+Required approval
+
+Department Lead
+
+Optional approval
+
+Operation Manager
+
+Required approval
+
+Purchaser receives approved requisition
+
+### Required and optional approval logic
+
+- Required approvers must approve before the requisition can proceed.
+- Optional approvers may approve, reject or leave their stage without approval.
+- An optional stage must not block the workflow when all required approvals are complete.
+- In the example above, if the Team Lead approves and the Department Lead does not respond, the Operation Manager can still approve the requisition.
+- A rejection by a required approver rejects or returns the requisition according to the configured workflow policy.
+- A rejection by an optional approver must not automatically reject the entire requisition.
+- Every approval, rejection, comment and bypass must be recorded.
+
+The system should also support returning a requisition for modification.
+
+### Workflow configuration rules
+
+- A workflow must have at least one required approval stage.
+- The system must prevent invalid or circular approval sequences.
+- Users must not approve their own requisitions unless an explicitly authorized exception is configured and audited.
+- Existing requisitions must retain the workflow version with which they started.
+- Changes to a workflow should apply to new requisitions, not silently alter pending ones.
+
+## 7. Purchase management
+
+Once all required approvals are completed, the system changes the requisition to Approved / Pending Purchase.
+
+The assigned purchaser receives an email and in-app notification.
+
+### Purchase completion form
+
+The purchaser records the actual purchase information:
+
+| Field             | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| Requisition       | Linked approved request                              |
+| Service/tool      | Purchased service                                    |
+| Account email     | Account purchased, where applicable                  |
+| Actual plan       | Plan actually purchased                              |
+| Actual amount     | Final amount paid                                    |
+| Currency          | Payment currency                                     |
+| Billing cycle     | Actual billing frequency                             |
+| Purchase date     | Actual date of purchase                              |
+| Purchase source   | Direct or Vendor                                     |
+| Provider          | Service provider                                     |
+| Vendor            | Selected vendor when purchased through a vendor      |
+| Payment card      | Company card used                                    |
+| Payment reference | Transaction reference                                |
+| Invoice/receipt   | Supporting document                                  |
+| Next renewal date | Automatically calculated, with authorized correction |
+
+### Purchase source
+
+Two purchase methods must be supported:
+
+Direct purchase
+
+- Purchased directly from the service provider.
+- Store provider name and website.
+- Vendor field remains empty.
+
+Vendor purchase
+
+- Purchased through an external vendor or reseller.
+- Select the vendor from Vendor Management.
+- Retain vendor and provider details in the purchase record.
+
+### Financial comparison
+
+The system must preserve:
+
+- Original requested amount.
+- Approved amount, if separately recorded.
+- Actual purchase amount.
+- Difference between requested and actual amounts.
+- Actual renewal amount, where known.
+
+Purchase records must not overwrite the original requisition amount.
+
+## 8. Individual account and license management
+
+Every purchased account must be registered under its corresponding service/tool.
+
+For example:
+
+ChatGPT
+
+Registered service
+
+Purchased accounts
+
+a\@gmail.com
+
+Individual account #1
+
+Active
+
+b\@gmail.com
+
+Individual account #2
+
+Active
+
+c\@gmail.com
+
+Individual account #3
+
+Active
+
+d\@gmail.com
+
+Individual account #4
+
+Active
+
+e\@gmail.com
+
+Individual account #5
+
+Active
+
+### Account information
+
+Each individual account must have:
+
+- Service/tool.
+- Account email or username.
+- Plan name.
+- Purchase date.
+- Purchase amount.
+- Billing cycle.
+- Next renewal date.
+- Renewal amount.
+- Purchase source (Direct/Vendor).
+- Vendor, if applicable.
+- Payment card reference.
+- Account status.
+- Linked purchase record.
+
+### Account creation
+
+The preferred process is:
+
+1. Employee requests a new account or subscription.
+2. The request goes through approval.
+3. Purchaser completes the purchase.
+4. Purchaser enters the actual account email, plan and payment information.
+5. System creates the account under the selected service.
+6. The account becomes visible in the service's account inventory.
+
+Administrators may also add an existing account manually, but must provide the purchase details or mark historical information as unavailable.
+
+### Account status
+
+- Active
+- Inactive
+- Suspended
+- Expired
+- Cancelled
+
+The system must distinguish an account's status from its subscription payment status.
+
+## 9. Subscription and billing management
+
+Every recurring purchase must have a subscription record.
+
+### Supported billing cycles
+
+- Monthly
+- Quarterly
+- Half-yearly
+- Yearly
+- One-time
+- Custom recurring
+
+### Subscription information
+
+- Service/tool.
+- Individual account, if applicable.
+- Plan name.
+- Billing cycle.
+- Purchase date.
+- Subscription start date.
+- Current subscription amount.
+- Next renewal date.
+- Expected renewal amount.
+- Currency.
+- Auto-renewal status, if known.
+- Subscription status.
+- Related purchase and payment records.
+
+### Renewal calculation
+
+The system calculates the next renewal date based on the purchase or subscription start date and the selected billing cycle.
+
+Examples:
+
+| Billing cycle | Example purchase date | Next renewal         |
+| ------------- | --------------------- | -------------------- |
+| Monthly       | 15 November 2026      | 15 December 2026     |
+| Quarterly     | 15 November 2026      | 15 February 2027     |
+| Half-yearly   | 15 November 2026      | 15 May 2027          |
+| Yearly        | 15 November 2026      | 15 November 2027     |
+| One-time      | 15 November 2026      | No recurring renewal |
+
+Purchasers or authorized administrators may correct the calculated renewal date when the provider's actual billing date differs.
+
+A renewal must create a new payment or renewal record. Previous payments must never be overwritten.
+
+## 10. Payment card management and restricted visibility
+
+Sensitive financial information
+
+Payment-card information must be protected separately from ordinary system records.
+
+Only specifically authorized persons can view payment-card information. Being an administrator, purchaser, finance user or management user must not automatically grant access to card details.
+
+### Card registration
+
+The card registry should store:
+
+- Card name (e.g. AWS Company Card).
+- Card network/provider (Visa, Mastercard, etc.).
+- Bank name.
+- Cardholder or responsible person.
+- Last four digits.
+- Currency.
+- Expiry month and year, if needed.
+- Card status.
+- Authorized viewers.
+
+The system must never store the full card number, CVV, PIN or card authentication secrets.
+
+### Card visibility permissions
+
+Card visibility must be an independent permission, separate from general purchase and finance permissions.
+
+| User type                      | Card visibility                                       |
+| ------------------------------ | ----------------------------------------------------- |
+| Employee                       | No access                                             |
+| Team Lead                      | No access by default                                  |
+| Department Lead                | No access by default                                  |
+| Purchaser                      | No access by default                                  |
+| Finance                        | No access by default                                  |
+| Management                     | No access by default                                  |
+| Specifically authorized person | Access according to assigned permission               |
+| Super Admin                    | No automatic exception; must be explicitly authorized |
+
+An authorized person can be granted one of the following permissions:
+
+- View card name only: Can identify the payment card used.
+- View masked details: Can see card name, bank, network and last four digits.
+- Manage card records: Can create, update, deactivate and assign authorized viewers.
+- View card usage: Can see which purchases used a card without seeing protected card details.
+
+### Important visibility rules
+
+1. Only explicitly authorized users can open the protected card details.
+2. Unauthorized users must not see card details in forms, reports, exports, search results, notifications or API responses.
+3. Purchase records should display a neutral label such as `Restricted Card` to unauthorized users.
+4. Card access permissions must be configurable by the Super Admin or designated security administrator.
+5. Card-detail access must be logged with the viewer, card, date/time and action.
+6. Revoking a user's card permission must immediately prevent further access.
+7. Card information must be protected using server-side authorization, not merely hidden in the interface.
+8. Card exports and reports must follow the same access restrictions.
+9. Changes to card permissions and card records must be audited.
+10. Any emergency access mechanism must be explicitly configured, justified and logged.
+
+Important distinction: A user may be allowed to record that a card was used for a purchase without being allowed to see the card's bank, name or last four digits. These must be separate permissions.
+
+## 11. Vendor management
+
+Maintain a directory of vendors and service resellers.
+
+### Vendor information
+
+- Vendor name.
+- Contact person.
+- Email address.
+- Phone number.
+- Website.
+- Address.
+- Notes.
+- Status.
+
+### Vendor records
+
+The system should show:
+
+- Services purchased through the vendor.
+- Related purchase records.
+- Total purchase amount.
+- Purchase history.
+- Invoices and supporting documents.
+
+A vendor can be associated with multiple services and purchases.
+
+## 12. Notifications and reminders
+
+Notifications should be available through email and the application's notification center.
+
+### Notification events
+
+| Event                               | Recipient                                |
+| ----------------------------------- | ---------------------------------------- |
+| New requisition submitted           | Assigned approver                        |
+| Approval required                   | Current approver                         |
+| Requisition approved                | Requester and purchaser                  |
+| Requisition rejected                | Requester                                |
+| Requisition returned                | Requester                                |
+| Purchase completed                  | Requester and designated administrators  |
+| Upcoming renewal                    | Designated administrators and purchaser  |
+| Payment recorded                    | Authorized finance users                 |
+| New employee invitation             | Invited employee                         |
+| Invitation expired                  | Administrator                            |
+| Card information permission changed | Affected user and security administrator |
+
+### Renewal reminders
+
+Administrators should be able to configure reminders, for example:
+
+- 7 days before renewal.
+- 3 days before renewal.
+- 1 day before renewal.
+- On the renewal date.
+
+Notifications should include the service, plan, account, renewal date, expected amount and responsible person.
+
+Sensitive card information must never be included in email notifications.
+
+### Monthly purchasing notification
+
+Seven days before the end of each month, the system must automatically send a monthly purchase-planning notification to designated administrators.
+
+The notification should summarize:
+
+- Approved but not yet purchased requisitions.
+- Expected purchases for the upcoming month.
+- Estimated purchase amounts.
+- Expected purchase dates.
+- Department and team.
+- Requested service/tool.
+- Pending approval requests.
+
+This is a planning reminder, not an automatic purchase instruction.
+
+## 13. Dashboard and analytics
+
+The dashboard should provide a clear view of the company's digital service expenditure and purchasing activity.
+
+### Dashboard metrics
+
+- Total registered services and tools.
+- Total purchased accounts.
+- Active and inactive accounts.
+- Active subscriptions.
+- Pending requisitions.
+- Pending approvals.
+- Approved but not purchased requests.
+- Monthly expenditure.
+- Annual expenditure.
+- Upcoming renewals.
+- Expected upcoming purchases.
+
+### Dashboard filters
+
+- Date range.
+- Department.
+- Team.
+- Service/tool.
+- Category.
+- Vendor.
+- Billing cycle.
+- Purchase source.
+- Subscription status.
+
+Card-sensitive information must remain restricted even when dashboard filters are used.
+
+## 14. Reports
+
+### Monthly expenditure report
+
+The monthly report should include:
+
+- Total requested amount.
+- Total approved amount, if applicable.
+- Actual purchase expenditure.
+- Difference between requested and actual amounts.
+- Department-wise expenditure.
+- Team-wise expenditure.
+- Service/tool-wise expenditure.
+- Vendor-wise expenditure.
+- Direct versus vendor purchases.
+- New subscriptions.
+- Renewals.
+- Upcoming payments.
+- Pending purchases.
+
+### Annual expenditure report
+
+The annual report should include:
+
+- Total annual expenditure.
+- Monthly expenditure trend.
+- Department-wise expenditure.
+- Team-wise expenditure.
+- Service/tool-wise expenditure.
+- Category-wise expenditure.
+- Vendor-wise expenditure.
+- Direct versus vendor expenditure.
+- Monthly, quarterly and yearly subscription costs.
+- One-time purchase costs.
+- Requisition versus actual expenditure.
+- Total renewal expenditure.
+- Upcoming renewal forecast.
+
+### Automatic annual report
+
+At the end of each financial or calendar year, according to the configured reporting period:
+
+1. Generate the annual report.
+2. Store a copy in the reporting archive.
+3. Email the report to designated administrators.
+4. Record when the report was generated and delivered.
+
+The report period must be configurable. The system should not assume the company's financial year is the calendar year.
+
+### Export formats
+
+- PDF
+- Excel
+- CSV
+
+Every export must enforce the same data permissions as the on-screen reports. Restricted card information must never appear in an export for unauthorized users.
+
+## 15. Audit logs
+
+The system must maintain a central activity log.
+
+Record at least:
+
+- Employee creation and activation.
+- Employee role and permission changes.
+- Department and team changes.
+- Requisition creation and modification.
+- Approval and rejection.
+- Workflow configuration changes.
+- Purchase completion.
+- Service and account creation.
+- Subscription changes.
+- Payment updates.
+- Vendor changes.
+- Card record changes.
+- Card permission changes.
+- Protected card-detail access.
+- Report generation and export.
+- Login and important security events.
+
+Each log should include:
+
+- User.
+- Action.
+- Record affected.
+- Date and time.
+- Relevant before-and-after values, where appropriate.
+- Source or session details where available.
+
+Audit logs should be protected against ordinary user modification or deletion.
+
+## 16. Main application navigation
+
+The recommended application structure is:
+
+| Main menu          | Subsections                                     |
+| ------------------ | ----------------------------------------------- |
+| Dashboard          | Overview, pending actions, upcoming payments    |
+| Requisitions       | All requisitions, my requests, approvals        |
+| Services & Tools   | Catalogue, categories                           |
+| Accounts           | Individual purchased accounts                   |
+| Subscriptions      | Active subscriptions, renewals, payment history |
+| Purchases          | Pending purchases, completed purchases          |
+| Vendors            | Vendor directory, purchase history              |
+| Payment Cards      | Card registry, restricted card settings         |
+| Organization       | Departments, teams, employees                   |
+| Approval Workflows | Purchase workflows, access workflows            |
+| Reports            | Monthly, annual, expenditure reports            |
+| Notifications      | Alerts, notification history                    |
+| Audit Logs         | Activity and security history                   |
+| Settings           | Roles, permissions, system configuration        |
+
+## 17. Core business rules
+
+1. All purchases should be linked to a requisition, except authorized historical or direct-entry records.
+2. A requisition must pass its configured approval workflow before purchase.
+3. Only assigned purchasers can complete purchases.
+4. Requested, approved and actual purchase amounts must remain separate.
+5. Each purchased service must be registered in the catalogue.
+6. Each individual account must belong to a service/tool.
+7. An additional account must not be treated as a new service.
+8. Each subscription must have a defined billing cycle.
+9. One-time purchases must not generate recurring renewal dates.
+10. Previous payment records must be preserved.
+11. Renewal dates must be calculated and tracked independently for each subscription.
+12. Vendor and direct purchases must be distinguishable.
+13. Card visibility must require explicit authorization.
+14. Unauthorized users must not retrieve protected card details through reports, exports, APIs or other application screens.
+15. Employee information must only support organizational and purchasing workflows.
+16. Every important activity must be logged.
+17. Changes to approval workflows must not rewrite historical approval records.
+18. Expired employee invitations must not create active accounts.
+
+## 18. Suggested database structure
+
+The database should use relational records and preserve links between requisitions, approvals, purchases, accounts and subscriptions.
+
+| Database entity       | Purpose                                    |
+| --------------------- | ------------------------------------------ |
+| users                 | Employee login and profile                 |
+| departments           | Department records                         |
+| teams                 | Teams within departments                   |
+| team_members          | Employee-team assignments                  |
+| roles                 | Configurable roles                         |
+| permissions           | System permissions                         |
+| role_permissions      | Permissions assigned to roles              |
+| user_roles            | Roles assigned to employees                |
+| user_permissions      | Individual permission overrides            |
+| service_categories    | Service/tool categories                    |
+| services              | Service and tool catalogue                 |
+| providers             | Software providers                         |
+| vendors               | External vendors and resellers             |
+| requisitions          | Employee purchase requests                 |
+| requisition_items     | Requested service, account or plan details |
+| approval_workflows    | Workflow definitions                       |
+| workflow_versions     | Published workflow versions                |
+| approval_stages       | Ordered approval stages                    |
+| approval_actions      | Approval decisions and comments            |
+| workflow_assignees    | Selected approvers or role-based assignees |
+| purchases             | Completed purchase records                 |
+| purchase_items        | Individual purchased items                 |
+| service_accounts      | Purchased accounts under services          |
+| subscriptions         | Subscription details and billing cycle     |
+| subscription_renewals | Renewal history and future renewal records |
+| payments              | Actual payment records                     |
+| payment_cards         | Restricted company card records            |
+| card_authorized_users | Users allowed to access card information   |
+| card_access_logs      | Card detail access history                 |
+| invoices              | Invoice and receipt references             |
+| notifications         | In-app notification records                |
+| notification_rules    | Notification schedules and settings        |
+| audit_logs            | System activity history                    |
+| report_archives       | Generated monthly and annual reports       |
+
+### Important database relationships
+
+- One service can have many purchased accounts.
+- One service can have many purchases.
+- One purchase can create one or more account records.
+- One account can have subscription history over time.
+- One subscription can have many renewal and payment records.
+- One vendor can be associated with many purchases.
+- One payment card can be associated with many payments.
+- One requisition can have multiple approval stages.
+- One requisition can be associated with its resulting purchase records.
+
+Use foreign keys, unique identifiers, appropriate indexes and soft deletion where historical references must remain available.
+
+## 19. Technical architecture
+
+The following stack is recommended, consistent with the proposed application requirements.
+
+| Layer                   | Technology                |
+| ----------------------- | ------------------------- |
+| Backend                 | Laravel 12 / PHP 8.3+     |
+| Frontend                | Vue 3                     |
+| Application integration | Inertia.js                |
+| Database                | PostgreSQL                |
+| UI styling              | Tailwind CSS              |
+| Authentication          | Laravel Authentication    |
+| Authorization           | Laravel Policies and RBAC |
+| Background processing   | Redis and Laravel Queues  |
+| Scheduled tasks         | Laravel Scheduler         |
+| File storage            | Private object storage    |
+| Web server              | Nginx                     |
+| Deployment              | Linux and Docker          |
+
+### Architecture principles
+
+- Build a modular web application rather than a collection of unnecessary microservices.
+- Separate business logic into clear modules.
+- Enforce permissions on the backend.
+- Store invoices and receipts in private storage.
+- Use queued jobs for emails, scheduled reminders and report generation.
+- Use database transactions for approvals and purchase completion.
+- Keep payment-card access authorization independent from general application roles.
+- Maintain backups and audit history.
+
+### Security requirements
+
+- HTTPS for all application traffic.
+- Secure password hashing.
+- Session protection and logout controls.
+- Optional MFA, with stronger verification for sensitive operations.
+- CSRF protection and input validation.
+- Rate limiting for login, invitations and password recovery.
+- Server-side authorization on all protected endpoints.
+- Secure handling of uploaded invoices and documents.
+- Encrypted backups and protected secrets.
+- No sensitive credentials or card data in application logs.
+
+Card data security: Store only the permitted card metadata and last four digits. The system is not a payment-card processor and must not store full card numbers, CVV or PIN. Encrypt protected metadata at rest and restrict its decryption to the authorized card-information service or application boundary. A database-only compromise should not expose protected card details.
+
+## 20. Key application workflows
+
+### A. Purchase request to completed purchase
+
+1. Employee logs in.
+2. Employee creates a requisition.
+3. Employee selects a service/tool or proposes a new one.
+4. Employee provides the requested plan, billing cycle and estimated amount.
+5. System identifies the applicable approval workflow.
+6. Assigned approvers receive notifications.
+7. Approvers complete their stages.
+8. Once required approvals are complete, the request becomes approved.
+9. Assigned purchaser receives the request.
+10. Purchaser completes the purchase and records actual details.
+11. System creates or updates the service account and subscription.
+12. System calculates the next renewal date.
+13. Relevant users receive purchase-completion notifications.
+14. All actions are logged.
+
+### B. New service creation
+
+1. Authorized administrator or requester proposes a new service.
+2. System checks for an existing matching service.
+3. Authorized administrator creates or confirms the catalogue entry.
+4. Category and provider are assigned.
+5. The service becomes available for future requisitions.
+
+The system should prevent accidental duplicate catalogue entries.
+
+### C. Additional account purchase
+
+1. Employee selects an existing service, such as ChatGPT.
+2. Employee requests another account and provides the requested account email and plan details.
+3. The requisition goes through approval.
+4. Purchaser completes the purchase.
+5. Purchaser enters the actual account email, plan, price and billing details.
+6. System adds the account to the existing ChatGPT inventory.
+7. Subscription and renewal records are created.
+
+### D. Monthly purchase planning
+
+1. Scheduler runs seven days before month-end.
+2. System collects approved and expected purchases for the following month.
+3. It calculates estimated upcoming expenditure.
+4. It sends a summary to designated administrators.
+5. Notification delivery is recorded.
+
+### E. Restricted card viewing
+
+1. Authorized security administrator grants card-view permission to a specific person.
+2. The user authenticates.
+3. The server verifies that the user has the specific card-view permission.
+4. If authorized, the user can see the permitted card fields.
+5. The system records the access.
+6. When permission is revoked, further access is denied immediately.
+
+## 21. Acceptance criteria
+
+The first release should not be considered complete until the following scenarios work:
+
+| ID    | Acceptance requirement                                                                      |
+| ----- | ------------------------------------------------------------------------------------------- |
+| AC-01 | Admin can create and manage departments, teams and employees.                               |
+| AC-02 | Employee invitation, 48-hour expiry, reinvitation and seven-day deletion work correctly.    |
+| AC-03 | Admin can create, edit and categorize services and tools.                                   |
+| AC-04 | Employees with permission can submit purchase requisitions.                                 |
+| AC-05 | Approval workflows can be built through drag-and-drop.                                      |
+| AC-06 | Approval stages support required and optional configurations.                               |
+| AC-07 | Optional approval stages do not block a workflow after all required approvals are complete. |
+| AC-08 | Approved requests are assigned to the designated purchaser.                                 |
+| AC-09 | Purchaser can record actual purchase information.                                           |
+| AC-10 | Purchases can be recorded as direct or vendor purchases.                                    |
+| AC-11 | Completed purchases can create individual service accounts.                                 |
+| AC-12 | Subscription renewals are calculated from the billing cycle.                                |
+| AC-13 | One-time purchases do not create recurring renewal dates.                                   |
+| AC-14 | Requisition and actual purchase amounts appear separately in reports.                       |
+| AC-15 | Card details are visible only to specifically authorized people.                            |
+| AC-16 | Unauthorized users cannot retrieve card information through APIs, reports or exports.       |
+| AC-17 | Monthly purchase-planning notifications are sent seven days before month-end.               |
+| AC-18 | Monthly and annual expenditure reports can be generated and exported.                       |
+| AC-19 | Annual reports are automatically generated and emailed to designated administrators.        |
+| AC-20 | All important activities are recorded in audit logs.                                        |
+
+## 22. Development phases
+
+A practical implementation sequence:
+
+| Phase                       | Deliverables                                                     |
+| --------------------------- | ---------------------------------------------------------------- |
+| 1. Foundation               | Authentication, organization, roles and permissions              |
+| 2. Catalogue                | Services, categories, providers and vendors                      |
+| 3. Requisitions             | Request creation, editing and status management                  |
+| 4. Approval engine          | Drag-and-drop workflow builder and approval processing           |
+| 5. Procurement              | Purchase completion and actual payment recording                 |
+| 6. Accounts & subscriptions | Individual accounts, billing cycles and renewals                 |
+| 7. Card security            | Card registry, restricted permissions and audit logging          |
+| 8. Notifications            | Email, in-app alerts and scheduled reminders                     |
+| 9. Reports                  | Dashboard, monthly and annual reports, exports                   |
+| 10. Testing & deployment    | Security, integration, acceptance testing and production release |
+
+## 23. Final development guidelines
+
+The development team should follow these principles:
+
+- Build around the purchasing lifecycle, not employee management.
+- Avoid duplicating information between requisitions, purchases, accounts and subscriptions.
+- Automatically populate account and subscription records from completed purchases wherever possible.
+- Keep requested costs, approved costs, actual payments and future renewal costs separate.
+- Make approval workflows configurable without requiring code changes.
+- Treat payment-card visibility as a separate security boundary.
+- Preserve historical records even when employees, services, vendors or cards become inactive.
+- Ensure reports reflect actual recorded payments rather than simply adding up subscription prices.
+- Design the system to accommodate new tools, categories, vendors and billing cycles.
+
+Final product definition: ESTMS is a centralized internal procurement, subscription, digital asset inventory and expenditure management platform for Riseup Labs. It manages the lifecycle of company software and digital services, from employee requests and approvals through purchasing, payment tracking, account registration, renewals and financial reporting.
+
+Recommended implementation priority: Build the requisition → approval → purchase → account/subscription → reporting workflow first. Implement restricted card visibility as a security requirement from the beginning, not as a feature to add later.
+
+## 24. UI design prompt
+
+This section is a ready-to-use prompt for a designer or an AI design tool (Claude Design, Figma AI, v0, Lovable and similar). It describes the visual direction, brand usage, layout, key screens and accessibility expectations for ESTMS.
+
+### 24.1 Brand tokens (replace with official Riseup Labs values)
+
+The values below are working defaults. Replace them with the official hex codes, fonts and logo files from the Riseup Labs brand guideline before final design. All colours must be defined as design tokens so the brand can be changed in one place.
+
+| Token                  | Working default                          | Use                                   |
+| ---------------------- | ---------------------------------------- | ------------------------------------- |
+| `--brand-primary`      | Riseup Labs primary colour (to confirm)  | Primary buttons, active menu, links   |
+| `--brand-primary-soft` | 10% tint of primary                      | Selected rows, badges, hover states   |
+| `--brand-dark`         | Deep navy / near-black                   | Sidebar, headings                     |
+| `--surface`            | White                                    | Cards, tables, forms                  |
+| `--background`         | Very light grey-blue                     | Page background                       |
+| `--border`             | Light grey                               | Dividers, inputs                      |
+| `--text-primary`       | Near-black                               | Body and headings                     |
+| `--text-muted`         | Mid grey                                 | Secondary text, helper text           |
+| `--success`            | Green                                    | Approved, Active, Purchased           |
+| `--warning`            | Amber                                    | Pending, Renewal due soon             |
+| `--danger`             | Red                                      | Rejected, Expired, Overdue            |
+| `--info`               | Blue                                     | Submitted, informational notices      |
+| `--restricted`         | Neutral dark grey with lock icon         | Restricted Card and protected fields  |
+
+Typography: one modern sans-serif family (Inter, Plus Jakarta Sans or the official Riseup Labs font) with a clear scale. Base size 14–16 px, headings semibold, numbers in tabular figures so amounts align. Use 8 px spacing, 12 px corner radius on cards, 8 px on inputs and buttons, and soft, low-contrast shadows.
+
+### 24.2 The prompt
+
+> Design a modern, clean and professional web application UI for **ESTMS – the Riseup Labs Software & Digital Services Management System**, an internal tool used to request, approve, purchase, track and report on company software and digital services.
+>
+> **Brand and mood.** Follow the Riseup Labs brand: use the brand primary colour as the single accent colour, a deep neutral for the sidebar and headings, and white cards on a light background. The feel should be calm, confident, trustworthy and technology-forward, like a premium SaaS product, not a dense legacy ERP. Use generous white space, rounded cards, subtle shadows, crisp line icons (one consistent icon set) and small, purposeful animations (150–250 ms) for hover, drawer open and status changes.
+>
+> **Users.** Employees (submit and track requests), approvers (Team Lead, Department Lead, Operation Manager), Purchasers, Finance, Management, Administrators and Card Information Viewers. Each role should see only the menus and actions it is permitted to use.
+>
+> **Layout.** A fixed left sidebar (collapsible to icons) with the main menu: Dashboard, Requisitions, Services & Tools, Accounts, Subscriptions, Purchases, Vendors, Payment Cards, Organization, Approval Workflows, Reports, Notifications, Audit Logs, Settings. A top bar with global search (Ctrl/Cmd + K command palette), a "New requisition" primary button, the notification bell with unread count, and the user menu. Breadcrumbs and a page title with a short helper line on every page. Use side drawers for quick view and edit, and full pages for long forms.
+>
+> **Screens to design (desktop first, fully responsive for tablet and mobile):**
+>
+> 1. **Login, invitation activation and password reset.** Split layout with brand panel and a simple form. Show clear states for expired invitation and resend.
+> 2. **Dashboard.** KPI cards (registered services and tools, purchased accounts, active subscriptions, pending approvals, approved but not purchased, monthly expenditure, annual expenditure, upcoming renewals). Below: monthly expenditure trend chart, expenditure by department and by category (donut or bar), an "Upcoming renewals" list with days remaining, and a "Pending actions for me" panel. Filters for date range, department, team, category, vendor, billing cycle and purchase source in a compact filter bar. Never show card details on the dashboard.
+> 3. **Requisition list and detail.** Tabs: All, My requests, Needs my approval. Table with status chips (Draft, Submitted, Pending Approval, Returned, Approved, Rejected, Pending Purchase, Purchased, Cancelled), search, filters and bulk actions. The detail page shows a visual approval timeline (each stage as a step with Required or Optional badge, approver avatar, decision, comment and time), requested versus approved versus actual amount side by side, attachments, and a clear approve / reject / return action bar with a comment box.
+> 4. **New requisition form.** A guided, single-page form in logical sections (Service, Plan and billing, Cost, Justification, Attachments) with a live summary card on the right, autosave as Draft, inline validation and a duplicate-service warning.
+> 5. **Services & Tools catalogue.** Card and table views, a Type → Category → Subcategory filter tree on the left, provider logo placeholders, status badges and a "Create service" drawer. Service detail page shows its accounts, subscriptions, purchases and spend.
+> 6. **Accounts.** Per-service account inventory (for example ChatGPT with its individual accounts), showing account email, plan, renewal date, source (Direct or Vendor), vendor and account status, with a clear separation between account status and subscription payment status.
+> 7. **Subscriptions and renewals.** Table plus a calendar view of upcoming renewals, colour-coded by urgency (7, 3, 1 days and due today), renewal amount and responsible person.
+> 8. **Purchase completion form (Purchaser).** Pre-filled from the approved requisition, with the requested amount shown read-only beside the actual amount and the difference calculated live. Direct versus Vendor switch that reveals the vendor selector. Payment card selector that shows only a neutral "Restricted Card" label unless the user has card permission. Invoice upload with drag and drop and preview. Auto-calculated next renewal date with an authorised override.
+> 9. **Vendors.** Directory with contact details, total purchase amount, related purchases and documents.
+> 10. **Payment Cards (restricted area).** Visible only to authorised users. Use a distinct, calm "secure area" treatment with a lock icon, masked values (last four digits only), permission levels (name only, masked details, manage, usage) and an access log. For unauthorised users, show the neutral "Restricted Card" chip everywhere with a tooltip explaining that access is restricted, never a blank or broken field.
+> 11. **Organization.** Departments, teams and employees with a tree view, employee table, invitation status (Pending, Expired, Active), resend invitation and role assignment.
+> 12. **Approval Workflow Builder.** A visual canvas with a left panel to search employees by name or email and browse by department or team, and draggable role chips (Team Lead, Department Lead, Operation Manager). Stages appear as connected cards on the canvas that can be reordered by drag and drop. Each stage has a Required or Optional toggle (Required shown solid, Optional shown dashed), an end node for the Purchaser or purchasing group, validation messages for invalid or circular flows, a version badge, and Save draft / Activate buttons.
+> 13. **Reports.** Monthly and annual report pages with summary tiles, charts, comparison tables (requested versus approved versus actual), export buttons (PDF, Excel, CSV) and a report archive list.
+> 14. **Notifications, Audit Logs and Settings.** A notification centre with read and unread states; a filterable audit log table with a before-and-after diff drawer; Settings for roles, permissions, reminders, report period and designated administrators.
+>
+> **Component library.** Buttons (primary, secondary, ghost, destructive), inputs, selects with search, date pickers, status chips, stepper, tabs, data tables (sticky header, sortable, column chooser, row density toggle, pagination), cards, modals, drawers, toasts, empty states with a friendly illustration and one clear action, skeleton loaders, and error states.
+>
+> **Ease of use.** Keep the main action on every screen obvious, with a maximum of one primary button per view. Use plain language, helpful empty states, inline help text, keyboard shortcuts, remembered filters and smart defaults. Reduce clicks for common tasks: approve from the list, renew from the renewal row, and add another account from the service page.
+>
+> **Accessibility.** Meet WCAG 2.2 AA: contrast of at least 4.5:1 for text, visible focus rings, full keyboard navigation, minimum 44 px touch targets on mobile, labels on every input, never rely on colour alone (pair every status colour with text or an icon), support reduced motion, and provide light and dark themes using the same tokens.
+>
+> **Deliverables.** A design system page (tokens, typography, components), then high-fidelity screens for the 14 areas above in light mode, with dark mode for the Dashboard, Requisition detail and Workflow Builder, plus mobile layouts for Login, Dashboard, New requisition and Approvals.
+
+### 24.3 Implementation notes
+
+- Build with Tailwind CSS tokens that map to the table in 24.1, so a brand update is a configuration change, not a redesign.
+- Use Vue 3 components through Inertia.js, with a shared layout, sidebar, data-table and drawer component reused across modules.
+- Apply the `Restricted Card` treatment as a single reusable component driven by server-side authorisation, so unauthorised users never receive card data in the page payload.
