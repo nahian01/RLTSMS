@@ -98,6 +98,44 @@ orgRouter.post('/users', (req: Request, res: Response) => {
   return res.status(201).json(newUser);
 });
 
+// PATCH /api/org/users/:id/status - Activate or deactivate employee account (Part 2.2)
+orgRouter.patch('/users/:id/status', (req: Request, res: Response) => {
+  const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status || !['Active', 'Inactive'].includes(status)) {
+    return res.status(400).json({ error: 'Status must be either Active or Inactive.' });
+  }
+
+  const state = dbStore.getState();
+  const targetUser = state.users.find((u) => u.id === id);
+  if (!targetUser) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+
+  dbStore.mutate((s) => {
+    const u = s.users.find((x) => x.id === id);
+    if (u) {
+      u.accountStatus = status;
+    }
+    s.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: currentUserId,
+      userName: currentUser ? currentUser.name : 'System Admin',
+      action: status === 'Active' ? 'Activate Account' : 'Deactivate Account',
+      entity: 'User',
+      entityId: id,
+      details: `${status === 'Active' ? 'Activated' : 'Deactivated'} account for ${targetUser.name} (${targetUser.email}).`,
+    });
+  });
+
+  return res.json({ success: true, message: `Account status updated to ${status}.` });
+});
+
 // PUT /api/org/setup-five-users - Initial setup configuration for foundational 5 accounts (Part 2)
 orgRouter.put('/setup-five-users', (req: Request, res: Response) => {
   const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';

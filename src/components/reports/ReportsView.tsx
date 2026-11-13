@@ -119,21 +119,19 @@ export const ReportsView: React.FC = () => {
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
             <button
               onClick={() => setReportType('monthly')}
-              className={`px-3 py-1 rounded-md font-semibold transition-colors ${
-                reportType === 'monthly'
-                  ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1 rounded-md font-semibold transition-colors ${reportType === 'monthly'
+                ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-900'
+                }`}
             >
               Monthly Report
             </button>
             <button
               onClick={() => setReportType('annual')}
-              className={`px-3 py-1 rounded-md font-semibold transition-colors ${
-                reportType === 'annual'
-                  ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1 rounded-md font-semibold transition-colors ${reportType === 'annual'
+                ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-900'
+                }`}
             >
               Annual Report
             </button>
@@ -185,13 +183,12 @@ export const ReportsView: React.FC = () => {
         <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-2xs space-y-1">
           <span className="text-[11px] text-slate-400">Net Budget Variance</span>
           <div
-            className={`text-xl font-bold font-mono ${
-              totalVariance < 0
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : totalVariance > 0
+            className={`text-xl font-bold font-mono ${totalVariance < 0
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : totalVariance > 0
                 ? 'text-rose-600 dark:text-rose-400'
                 : 'text-slate-700'
-            }`}
+              }`}
           >
             {totalVariance < 0 ? `-$${Math.abs(totalVariance).toFixed(2)}` : `+$${totalVariance.toFixed(2)}`}
           </div>

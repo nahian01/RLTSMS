@@ -67,10 +67,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-export async function startServer() {
+export async function startServer(customPort?: number) {
   await initDatabase();
-  return app.listen(PORT, () => {
-    console.log(`[RLTSMS] Enterprise API server listening on http://localhost:${PORT}`);
+  const listenPort = customPort || PORT;
+  return app.listen(listenPort, () => {
+    console.log(`[RLTSMS] Enterprise API server listening on http://localhost:${listenPort}`);
   });
 }
 

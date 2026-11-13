@@ -42,7 +42,7 @@ interface SidebarSection {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
-  const { currentView, setCurrentView, requisitions, accessAssignments, notifications } = useApp();
+  const { currentView, setCurrentView, requisitions, accessAssignments, notifications, users } = useApp();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Live badge counts
@@ -124,6 +124,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
     {
       label: 'Governance & System',
       items: [
+        {
+          id: 'organization',
+          label: 'Organization & Employees',
+          icon: Building,
+          badge: users.filter((u) => u.accountStatus === 'Active').length,
+          badgeColor: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200',
+        },
         {
           id: 'reports',
           label: 'Reports',

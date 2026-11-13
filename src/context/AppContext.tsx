@@ -230,10 +230,12 @@ interface AppContextType {
     designation: string;
     departmentId: string;
     teamId?: string;
+    reportingLeadId?: string;
     roles: UserRole[];
   }) => void;
   resendInvitation: (userId: string) => void;
   simulateActivateAccount: (userId: string) => void;
+  toggleUserStatus: (userId: string) => void;
   createDepartment: (dept: Omit<Department, 'id' | 'teamsCount' | 'employeesCount'>) => void;
   createTeam: (team: Omit<Team, 'id' | 'membersCount'>) => void;
 
@@ -2081,10 +2083,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     designation: string;
     departmentId: string;
     teamId?: string;
+    reportingLeadId?: string;
     roles: UserRole[];
   }) => {
     const dept = departments.find((d) => d.id === data.departmentId);
     const team = teams.find((t) => t.id === data.teamId);
+    const lead = data.reportingLeadId ? users.find((u) => u.id === data.reportingLeadId) : undefined;
 
     const now = new Date();
     const expiry = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
@@ -2099,6 +2103,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       departmentName: dept?.name || 'General',
       teamId: data.teamId,
       teamName: team?.name,
+      reportingLeadId: data.reportingLeadId,
+      reportingLeadName: lead?.name,
       roles: data.roles,
       accountStatus: 'Pending Invitation',
       invitationSentAt: now.toISOString(),
@@ -2119,6 +2125,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       entityId: newEmp.id,
       details: `Invited employee ${newEmp.name} (${newEmp.email}) as ${newEmp.roles.join(', ')}. Token valid until ${expiry.toISOString()}`,
     });
+  };
+
+  const toggleUserStatus = (userId: string) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id !== userId) return u;
+        const newStatus = u.accountStatus === 'Active' ? 'Inactive' : 'Active';
+        addAuditLog({
+          action: 'EMPLOYEE_STATUS_CHANGED',
+          entity: 'User',
+          entityId: u.id,
+          details: `Changed account status for ${u.name} (${u.email}) from ${u.accountStatus} to ${newStatus}.`,
+        });
+        return { ...u, accountStatus: newStatus };
+      })
+    );
   };
 
   const resendInvitation = (userId: string) => {
@@ -2333,6 +2355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         inviteEmployee,
         resendInvitation,
         simulateActivateAccount,
+        toggleUserStatus,
         createDepartment,
         createTeam,
         markNotificationRead,

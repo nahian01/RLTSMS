@@ -5,7 +5,8 @@ import { dbStore, verifyPassword, hashPassword } from '../server/data/store';
 import http from 'http';
 
 let server: http.Server;
-const BASE_URL = 'http://localhost:5000';
+const TEST_PORT = 5099;
+const BASE_URL = `http://localhost:${TEST_PORT}`;
 
 // Helper to make JSON requests to the test server
 async function apiRequest(path: string, options: { method?: string; headers?: Record<string, string>; body?: any } = {}) {
@@ -25,7 +26,7 @@ async function apiRequest(path: string, options: { method?: string; headers?: Re
 
 test('Setup RLTSMS Test Server', async () => {
   dbStore.reset();
-  server = await startServer();
+  server = await startServer(TEST_PORT);
   assert.ok(server, 'Server should start successfully');
 });
 
@@ -444,6 +445,54 @@ test('Centralized Sharing Hub: Hierarchical 3-Tier Endpoints and Upcoming Events
       'Event must clearly distinguish Subscription vs Access Expiration'
     );
   });
+});
+
+test('Employee Management: Add User, Invitation Token & Status Toggle', async () => {
+  // 1. Add employee with department, team, reporting lead and roles
+  const addRes = await apiRequest('/api/org/users', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Nafis Sadik',
+      email: 'nafis.sadik@riseuplabs.com',
+      phone: '+880 1711-223344',
+      designation: 'Senior DevOps Engineer',
+      departmentId: 'dept-eng',
+      teamId: 'team-mobile',
+      reportingLeadId: 'usr-3',
+      roles: ['Employee', 'Team Lead'],
+    },
+  });
+
+  assert.strictEqual(addRes.status, 201, 'Adding new employee must succeed');
+  assert.strictEqual(addRes.data.name, 'Nafis Sadik');
+  assert.strictEqual(addRes.data.accountStatus, 'Pending Invitation');
+  assert.ok(addRes.data.invitationExpiresAt, 'Must set 48h activation expiry');
+
+  const newEmpId = addRes.data.id;
+
+  // 2. Toggle status to Active
+  const activateRes = await apiRequest(`/api/org/users/${newEmpId}/status`, {
+    method: 'PATCH',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: { status: 'Active' },
+  });
+  assert.strictEqual(activateRes.status, 200);
+
+  // Verify status in store
+  const state = dbStore.getState();
+  const emp = state.users.find((u) => u.id === newEmpId);
+  assert.strictEqual(emp?.accountStatus, 'Active');
+
+  // 3. Toggle status to Inactive
+  const deactivateRes = await apiRequest(`/api/org/users/${newEmpId}/status`, {
+    method: 'PATCH',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: { status: 'Inactive' },
+  });
+  assert.strictEqual(deactivateRes.status, 200);
+  const emp2 = dbStore.getState().users.find((u) => u.id === newEmpId);
+  assert.strictEqual(emp2?.accountStatus, 'Inactive');
 });
 
 test('Teardown RLTSMS Test Server', async () => {
