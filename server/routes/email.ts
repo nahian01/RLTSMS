@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { dbStore } from '../data/store';
 import { EmailTemplate, EmailDeliveryLog } from '../../src/types';
+import { sendMail } from '../services/mailer';
 
 export const emailRouter = Router();
 
@@ -132,6 +133,15 @@ emailRouter.post('/test-send', (req: Request, res: Response) => {
 
   dbStore.mutate((s) => {
     s.emailLogs.unshift(newLog);
+  });
+
+  // Attempt real SMTP dispatch
+  sendMail({
+    to: recipientEmail.trim(),
+    subject: newLog.subject,
+    html: template.bodyHtml.replace(/\{\{[^}]+\}\}/g, 'SAMPLE'),
+  }).catch((err) => {
+    console.error('[EmailRouter] Test send SMTP error:', err.message);
   });
 
   return res.json({

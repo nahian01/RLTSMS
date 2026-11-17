@@ -1,8 +1,17 @@
 {
   "name": "rltsms",
+  "main": "server/worker.ts",
   "compatibility_date": "2026-11-13",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
+  },
+  "vars": {
+    "SMTP_USER": "nahian@riseuplabs.com",
+    "SMTP_PASS": "xqpixcezvjajfaea"
   }
 }

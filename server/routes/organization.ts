@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { dbStore, hashPassword } from '../data/store';
 import { Department, Team, User, RoleDefinition, PermissionDefinition, UserRole } from '../../src/types';
+import { sendInvitationEmail } from '../services/mailer';
 
 export const orgRouter = Router();
 
@@ -95,7 +96,78 @@ orgRouter.post('/users', (req: Request, res: Response) => {
     });
   });
 
+  // Dispatch real email via SMTP
+  sendInvitationEmail({
+    recipientEmail: newUser.email,
+    recipientName: newUser.name,
+    inviterName: currentUser ? currentUser.name : 'System Administrator',
+  }).catch((err) => {
+    console.error('[Organization] SMTP dispatch error:', err.message);
+  });
+
   return res.status(201).json(newUser);
+});
+
+// POST /api/org/users/:id/resend - Resend activation invitation email
+orgRouter.post('/users/:id/resend', async (req: Request, res: Response) => {
+  const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
+  const { id } = req.params;
+
+  const state = dbStore.getState();
+  const targetUser = state.users.find((u) => u.id === id);
+  if (!targetUser) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+  dbStore.mutate((s) => {
+    const u = s.users.find((x) => x.id === id);
+    if (u) {
+      u.invitationSentAt = now;
+      u.invitationExpiresAt = expiresAt;
+      u.accountStatus = 'Pending Invitation';
+    }
+
+    s.emailLogs.unshift({
+      id: `elog-${Date.now()}`,
+      templateKey: 'employee_invitation',
+      templateName: 'Employee Workspace Invitation (Resend)',
+      recipientEmail: targetUser.email,
+      recipientName: targetUser.name,
+      subject: `[Resend] Welcome to RLTSMS – Activate your Riseup Labs account`,
+      status: 'Sent',
+      attemptCount: 1,
+      dispatchedAt: now,
+    });
+
+    s.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: now,
+      userId: currentUserId,
+      userName: currentUser ? currentUser.name : 'System Admin',
+      action: 'Resend Employee Invitation',
+      entity: 'Organization',
+      entityId: id,
+      details: `Resent activation email to ${targetUser.name} (${targetUser.email}).`,
+    });
+  });
+
+  // Dispatch real email via SMTP
+  const mailResult = await sendInvitationEmail({
+    recipientEmail: targetUser.email,
+    recipientName: targetUser.name,
+    inviterName: currentUser ? currentUser.name : 'System Administrator',
+  });
+
+  return res.json({
+    success: true,
+    message: mailResult.success
+      ? `Activation email successfully resent to ${targetUser.email}.`
+      : `Invitation updated. (SMTP: ${mailResult.error || 'Sent'})`,
+  });
 });
 
 // PATCH /api/org/users/:id/status - Activate or deactivate employee account (Part 2.2)

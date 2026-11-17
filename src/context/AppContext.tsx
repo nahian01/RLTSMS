@@ -60,6 +60,7 @@ interface AppContextType {
   currentUser: User;
   isAuthenticated: boolean;
   signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   signOut: () => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
@@ -296,17 +297,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users, setUsers] = useState<User[]>(() => loadStored('users', INITIAL_USERS));
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      const token = localStorage.getItem('rltsms_auth_token');
-      return !!token;
+      const sessionToken = sessionStorage.getItem('rltsms_auth_token');
+      if (sessionToken) return true;
+      const remember = localStorage.getItem('rltsms_remember_me');
+      const localToken = localStorage.getItem('rltsms_auth_token');
+      if (remember === 'true' && localToken) return true;
+      return false;
     } catch {
       return false;
     }
   });
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
     try {
-      const token = localStorage.getItem('rltsms_auth_token');
-      if (!token) return 'usr-admin';
-      return loadStored('current_user_id', 'usr-admin');
+      const stored = sessionStorage.getItem('rltsms_current_user_id') || localStorage.getItem('rltsms_current_user_id');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      return 'usr-admin';
     } catch {
       return 'usr-admin';
     }
@@ -484,15 +491,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.user) {
-        const token = data.token || `rltsms_jwt_${data.user.id}_${Date.now()}`;
-        localStorage.setItem('rltsms_auth_token', token);
+        const token = data.token || `rltsms_jwt_${data.user.id || 'usr'}_${Date.now()}`;
         if (rememberMe) {
+          localStorage.setItem('rltsms_auth_token', token);
           localStorage.setItem('rltsms_remember_me', 'true');
+          localStorage.setItem('rltsms_current_user_id', JSON.stringify(data.user.id || 'usr-admin'));
         } else {
+          localStorage.removeItem('rltsms_auth_token');
           localStorage.removeItem('rltsms_remember_me');
+          localStorage.removeItem('rltsms_current_user_id');
+          sessionStorage.setItem('rltsms_auth_token', token);
+          sessionStorage.setItem('rltsms_current_user_id', JSON.stringify(data.user.id || 'usr-admin'));
         }
-        localStorage.setItem('rltsms_current_user_id', JSON.stringify(data.user.id));
-        setCurrentUserId(data.user.id);
+        if (data.user.id) {
+          setCurrentUserId(data.user.id);
+        }
         setIsAuthenticated(true);
         return { success: true };
       } else if (res.status === 401 || res.status === 403 || res.status === 429) {
@@ -530,13 +543,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const token = `rltsms_jwt_${matchingUser.id}_${Date.now()}`;
-    localStorage.setItem('rltsms_auth_token', token);
     if (rememberMe) {
+      localStorage.setItem('rltsms_auth_token', token);
       localStorage.setItem('rltsms_remember_me', 'true');
+      localStorage.setItem('rltsms_current_user_id', JSON.stringify(matchingUser.id));
     } else {
+      localStorage.removeItem('rltsms_auth_token');
       localStorage.removeItem('rltsms_remember_me');
+      localStorage.removeItem('rltsms_current_user_id');
+      sessionStorage.setItem('rltsms_auth_token', token);
+      sessionStorage.setItem('rltsms_current_user_id', JSON.stringify(matchingUser.id));
     }
-    localStorage.setItem('rltsms_current_user_id', JSON.stringify(matchingUser.id));
     setCurrentUserId(matchingUser.id);
     setIsAuthenticated(true);
 
@@ -550,9 +567,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
+  const login = signIn;
+
   const signOut = () => {
     localStorage.removeItem('rltsms_auth_token');
+    localStorage.removeItem('rltsms_user_id');
     localStorage.removeItem('rltsms_current_user_id');
+    localStorage.removeItem('rltsms_remember_me');
+    sessionStorage.removeItem('rltsms_auth_token');
+    sessionStorage.removeItem('rltsms_user_id');
+    sessionStorage.removeItem('rltsms_current_user_id');
     setIsAuthenticated(false);
   };
 
@@ -2251,6 +2275,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setUsers((prev) => [...prev, newEmp]);
+
+    // Dispatch real activation email via backend / Cloudflare Worker API
+    fetch('/api/org/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': currentUser?.id || 'usr-admin',
+      },
+      body: JSON.stringify(data),
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          const created = await res.json();
+          if (created && created.id) {
+            setUsers((prev) => [...prev.filter((u) => u.email.toLowerCase() !== created.email.toLowerCase()), created]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend invitation dispatch error:', err);
+      });
+
     addNotification({
       title: 'Employee Invitation Sent',
       message: `Account activation link sent to ${newEmp.email}. Invitation is valid for 48 hours.`,
@@ -2282,6 +2328,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resendInvitation = (userId: string) => {
+    const targetUser = users.find((u) => u.id === userId);
     const now = new Date();
     const expiry = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
@@ -2297,6 +2344,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           : u
       )
     );
+
+    // Dispatch real activation email resend via backend / Cloudflare Worker API
+    fetch(`/api/org/users/${userId}/resend`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': currentUser?.id || 'usr-admin',
+      },
+      body: JSON.stringify({ email: targetUser?.email, name: targetUser?.name }),
+    }).catch((err) => {
+      console.warn('Backend resend failed:', err);
+    });
 
     addAuditLog({
       action: 'INVITATION_RESENT',
@@ -2653,6 +2712,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         isAuthenticated,
         signIn,
+        login,
         signOut,
         darkMode,
         toggleDarkMode,
