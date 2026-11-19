@@ -164,17 +164,38 @@ export const ServiceSharingHubView: React.FC = () => {
     return services.map((svc) => {
       const svAccounts = accounts.filter((a) => a.serviceId === svc.id);
       const totalAccounts = svAccounts.length;
-      const activeAccounts = svAccounts.filter((a) => a.accountStatus === 'Active').length;
+      const activeAccounts = svAccounts.filter(
+        (a) =>
+          a.accountStatus !== 'Inactive' &&
+          a.accountStatus !== 'Suspended' &&
+          a.accountStatus !== 'Expired' &&
+          a.accountStatus !== 'Cancelled'
+      ).length;
 
       // Available: accounts where capacity is not full
       const availableAccounts = svAccounts.filter((a) => {
-        if (a.accountStatus !== 'Active') return false;
+        if (
+          a.accountStatus === 'Inactive' ||
+          a.accountStatus === 'Suspended' ||
+          a.accountStatus === 'Expired' ||
+          a.accountStatus === 'Cancelled'
+        ) {
+          return false;
+        }
         if (!a.seatLimit) return true;
         return (a.allocatedSeats || 0) < a.seatLimit;
       }).length;
 
       // Partially allocated: accounts where some seats are used but not all
       const partiallyAllocated = svAccounts.filter((a) => {
+        if (
+          a.accountStatus === 'Inactive' ||
+          a.accountStatus === 'Suspended' ||
+          a.accountStatus === 'Expired' ||
+          a.accountStatus === 'Cancelled'
+        ) {
+          return false;
+        }
         if (!a.seatLimit) return (a.allocatedSeats || 0) > 0;
         return (a.allocatedSeats || 0) > 0 && (a.allocatedSeats || 0) < a.seatLimit;
       }).length;
@@ -1449,10 +1470,21 @@ export const ServiceSharingHubView: React.FC = () => {
                             onClick={() => {
                               setApprovingRequest(req);
                               const targetSvcAccounts = accounts.filter(
-                                (a) => a.serviceId === req.serviceId && a.accountStatus === 'Active'
+                                (a) =>
+                                  (a.serviceId === req.serviceId ||
+                                    (a.serviceName &&
+                                      req.serviceName &&
+                                      a.serviceName.toLowerCase().trim() === req.serviceName.toLowerCase().trim())) &&
+                                  a.accountStatus !== 'Inactive' &&
+                                  a.accountStatus !== 'Suspended' &&
+                                  a.accountStatus !== 'Expired' &&
+                                  a.accountStatus !== 'Cancelled'
+                              );
+                              const availableCandidate = targetSvcAccounts.find(
+                                (a) => !a.seatLimit || (a.allocatedSeats || 0) < a.seatLimit
                               );
                               setAssignModalAccountId(
-                                req.preferredAccountId || targetSvcAccounts[0]?.id || ''
+                                req.preferredAccountId || availableCandidate?.id || targetSvcAccounts[0]?.id || ''
                               );
                               setAssignModalStartDate(new Date().toISOString().split('T')[0]);
                               setAssignModalExpiryDate(
@@ -1849,17 +1881,48 @@ export const ServiceSharingHubView: React.FC = () => {
                 >
                   <option value="">-- Choose Account to Assign --</option>
                   {accounts
-                    .filter((a) => a.serviceId === approvingRequest.serviceId && a.accountStatus === 'Active')
+                    .filter((a) => {
+                      const matchesService =
+                        a.serviceId === approvingRequest.serviceId ||
+                        (a.serviceName &&
+                          approvingRequest.serviceName &&
+                          a.serviceName.toLowerCase().trim() === approvingRequest.serviceName.toLowerCase().trim());
+                      const isOperational =
+                        a.accountStatus !== 'Inactive' &&
+                        a.accountStatus !== 'Suspended' &&
+                        a.accountStatus !== 'Expired' &&
+                        a.accountStatus !== 'Cancelled';
+                      return matchesService && isOperational;
+                    })
                     .map((acc) => {
                       const allocated = acc.allocatedSeats || 0;
                       const cap = acc.seatLimit ? `${allocated}/${acc.seatLimit} seats` : 'unlimited';
+                      const isFull = acc.seatLimit ? allocated >= acc.seatLimit : false;
                       return (
-                        <option key={acc.id} value={acc.id}>
-                          {acc.accountEmail} ({acc.planTier || acc.planName}) &bull; Capacity: {cap}
+                        <option key={acc.id} value={acc.id} disabled={isFull}>
+                          {acc.accountEmail} ({acc.planTier || acc.planName}) &bull; Capacity: {cap} &bull; [{acc.accountStatus}]{isFull ? ' - FULL' : ''}
                         </option>
                       );
                     })}
                 </select>
+                {accounts.filter((a) => {
+                  const matchesService =
+                    a.serviceId === approvingRequest.serviceId ||
+                    (a.serviceName &&
+                      approvingRequest.serviceName &&
+                      a.serviceName.toLowerCase().trim() === approvingRequest.serviceName.toLowerCase().trim());
+                  const isOperational =
+                    a.accountStatus !== 'Inactive' &&
+                    a.accountStatus !== 'Suspended' &&
+                    a.accountStatus !== 'Expired' &&
+                    a.accountStatus !== 'Cancelled';
+                  return matchesService && isOperational;
+                }).length === 0 && (
+                  <p className="text-[11px] text-amber-500 mt-1.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>No active accounts registered under {approvingRequest.serviceName}. You can register an account in the Accounts module first.</span>
+                  </p>
+                )}
               </div>
 
               {/* Start Date & Expiration Date */}
@@ -2285,7 +2348,15 @@ export const ServiceSharingHubView: React.FC = () => {
                   value={grantServiceId}
                   onChange={(e) => {
                     setGrantServiceId(e.target.value);
-                    const filtered = accounts.filter((a) => a.serviceId === e.target.value);
+                    const filtered = accounts.filter(
+                      (a) =>
+                        (a.serviceId === e.target.value ||
+                          a.serviceName === services.find((s) => s.id === e.target.value)?.name) &&
+                        a.accountStatus !== 'Inactive' &&
+                        a.accountStatus !== 'Suspended' &&
+                        a.accountStatus !== 'Expired' &&
+                        a.accountStatus !== 'Cancelled'
+                    );
                     setGrantAccountId(filtered[0]?.id || '');
                   }}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#211E1F] text-slate-900 dark:text-white"
@@ -2308,11 +2379,19 @@ export const ServiceSharingHubView: React.FC = () => {
                   required
                 >
                   {accounts
-                    .filter((a) => a.serviceId === grantServiceId && a.accountStatus === 'Active')
+                    .filter(
+                      (a) =>
+                        (a.serviceId === grantServiceId ||
+                          a.serviceName === services.find((s) => s.id === grantServiceId)?.name) &&
+                        a.accountStatus !== 'Inactive' &&
+                        a.accountStatus !== 'Suspended' &&
+                        a.accountStatus !== 'Expired' &&
+                        a.accountStatus !== 'Cancelled'
+                    )
                     .map((acc) => (
                       <option key={acc.id} value={acc.id}>
                         {acc.accountEmail} ({acc.planTier || acc.planName}) &bull; Capacity:{' '}
-                        {acc.seatLimit ? `${acc.allocatedSeats || 0}/${acc.seatLimit}` : 'open'}
+                        {acc.seatLimit ? `${acc.allocatedSeats || 0}/${acc.seatLimit}` : 'open'} &bull; [{acc.accountStatus}]
                       </option>
                     ))}
                 </select>

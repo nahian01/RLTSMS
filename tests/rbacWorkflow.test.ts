@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { INITIAL_ROLES, INITIAL_WORKFLOWS, INITIAL_PERMISSIONS } from '../src/data/mockData';
+import { INITIAL_ROLES, INITIAL_WORKFLOWS, INITIAL_PERMISSIONS, INITIAL_ACCOUNTS } from '../src/data/mockData';
 import { ApprovalWorkflow, WorkflowStageDefinition, UserRole } from '../src/types';
 
 // Helper matching AppContext hasPermission
@@ -204,4 +204,31 @@ test('User-Wise Notifications: Mark all read only marks current user notificatio
 
   // Alex's notification remains unread
   assert.strictEqual(notifications[1].isRead, false);
+});
+
+test('Access Approval: Accounts under ChatGPT Team / Plus are correctly listed with operational status and seat capacity', () => {
+  const chatGptAccounts = INITIAL_ACCOUNTS.filter(
+    (a) =>
+      (a.serviceId === 'srv-1' || a.serviceName.toLowerCase().includes('chatgpt')) &&
+      a.accountStatus !== 'Inactive' &&
+      a.accountStatus !== 'Suspended' &&
+      a.accountStatus !== 'Expired' &&
+      a.accountStatus !== 'Cancelled'
+  );
+
+  // Exactly 5 foundational ChatGPT accounts must be listed and operational
+  assert.strictEqual(chatGptAccounts.length, 5);
+
+  // Verify accounts with available capacity are present
+  const availableCandidates = chatGptAccounts.filter(
+    (a) => !a.seatLimit || (a.allocatedSeats || 0) < a.seatLimit
+  );
+  // acc-1 (2/5 seats), acc-3 (0/1 seats), acc-4 (0/1 seats), acc-5 (3/10 seats) have open capacity
+  assert.strictEqual(availableCandidates.length, 4);
+
+  // Ensure accounts have emails and capacity information
+  assert.ok(chatGptAccounts.some((a) => a.accountEmail === 'dev.ai1@riseuplabs.com'));
+  assert.ok(chatGptAccounts.some((a) => a.accountEmail === 'design.ai@riseuplabs.com'));
+  assert.ok(chatGptAccounts.some((a) => a.accountEmail === 'qa.ai@riseuplabs.com'));
+  assert.ok(chatGptAccounts.some((a) => a.accountEmail === 'exec.ai@riseuplabs.com'));
 });

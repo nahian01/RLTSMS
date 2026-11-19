@@ -61,7 +61,15 @@ export const AccessManagementView: React.FC = () => {
   const [assignmentSuccessNotice, setAssignmentSuccessNotice] = useState<string | null>(null);
 
   // Accounts filtered by selected service
-  const availableAccounts = accounts.filter((a) => a.serviceId === grantServiceId && a.accountStatus === 'Active');
+  const availableAccounts = accounts.filter(
+    (a) =>
+      (a.serviceId === grantServiceId ||
+        a.serviceName === services.find((s) => s.id === grantServiceId)?.name) &&
+      a.accountStatus !== 'Inactive' &&
+      a.accountStatus !== 'Suspended' &&
+      a.accountStatus !== 'Expired' &&
+      a.accountStatus !== 'Cancelled'
+  );
 
   const filteredAssignments = accessAssignments.filter((asgn) => {
     if (selectedStatus !== 'all' && asgn.status !== selectedStatus) return false;

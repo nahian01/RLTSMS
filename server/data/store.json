@@ -88,7 +88,7 @@
       "passwordHash": "riseuplabs_salt_2026:5bbe486a10f37e5b780d2850bf9b3ce5338e0ba69c99a07842652db52cab6e310e7a9d1b9f27935855dd50d6038e1210dd185ee3391415b67b2c766812a34024"
     },
     {
-      "id": "usr-1795079609228",
+      "id": "usr-1795080251920",
       "name": "Nafis Sadik",
       "email": "nafis.sadik@riseuplabs.com",
       "phone": "+880 1711-223344",
@@ -103,14 +103,14 @@
         "Team Lead"
       ],
       "accountStatus": "Inactive",
-      "invitationToken": "act_1795079609227_38ajnog",
-      "invitationSentAt": "2026-11-19T09:13:29.228Z",
-      "invitationExpiresAt": "2026-11-21T09:13:29.228Z",
+      "invitationToken": "act_1795080251919_m2v33r5",
+      "invitationSentAt": "2026-11-19T09:24:11.920Z",
+      "invitationExpiresAt": "2026-11-21T09:24:11.920Z",
       "cardPermissionLevel": "none",
-      "passwordHash": "4a45d330ba0c3761e0e5d4f2e05127d9:7fb3f5a81fe5559648cbc3ca0a616b0f37084374cddb96aa64ba1a69f9801054ed21d1146b864dfe944838d4a0f90c9fada642e23b543f6aa59322c55befdece"
+      "passwordHash": "1d5da8b76d08d2f36a542107d56857a9:38fb0de4ef99e9edf54366c43bf2af7a95e9b87161d0da8a040a65792b2fddbacf1b9c0a27b181f3f92209f163f5dc80dd596538d3e2262ce4c5e3023d63d65a"
     },
     {
-      "id": "usr-1795079613097",
+      "id": "usr-1795080255798",
       "name": "Rifat Chowdhury",
       "email": "rifat.onboard@riseuplabs.com",
       "phone": "+880 1712-998877",
@@ -121,10 +121,10 @@
         "Employee"
       ],
       "accountStatus": "Active",
-      "invitationSentAt": "2026-11-19T09:13:33.097Z",
-      "invitationExpiresAt": "2026-11-21T09:13:33.097Z",
+      "invitationSentAt": "2026-11-19T09:24:15.798Z",
+      "invitationExpiresAt": "2026-11-21T09:24:15.798Z",
       "cardPermissionLevel": "none",
-      "passwordHash": "16d6b87199dbfadcfef44fbea8398cbc:2a69fb2ce7d1f9defe14ad3be52336b1f788b3e4b34d7d9c678f5bcebd10769bb7eae6a3cbee2a91d6a008ecd58efc6dd454164b538e07d73fa765ffc7dc82ae"
+      "passwordHash": "a5e636414e7831d42aaa86060ff06be7:00047a2f718aaeb2e751e5baab3dac4c22808a0cb2cf76256e4db3b2e274bb276dfc2ccb4b32265ca258991ca3f7c38140d1df9abae0cddb329b30a49d6d2fe8"
     }
   ],
   "departments": [
@@ -1344,8 +1344,8 @@
   ],
   "cardLogs": [
     {
-      "id": "clog-1795079608615",
-      "timestamp": "2026-11-19T09:13:28.615Z",
+      "id": "clog-1795080251585",
+      "timestamp": "2026-11-19T09:24:11.585Z",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "userId": "usr-1",
@@ -1354,8 +1354,8 @@
       "justification": "Password-verified secure reveal (owner-authorized)"
     },
     {
-      "id": "clog-1795079608175",
-      "timestamp": "2026-11-19T09:13:28.175Z",
+      "id": "clog-1795080251295",
+      "timestamp": "2026-11-19T09:24:11.295Z",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "userId": "usr-4",
@@ -1419,21 +1419,21 @@
       "status": "Active"
     },
     {
-      "id": "cperm-1795079608482",
+      "id": "cperm-1795080251497",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "ownerId": "usr-4",
       "authorizedUserId": "usr-1",
       "authorizedUserName": "Sarah Lin",
       "authorizedUserEmail": "sarah.lin@riseuplabs.com",
-      "grantedAt": "2026-11-19T09:13:28.482Z",
+      "grantedAt": "2026-11-19T09:24:11.497Z",
       "status": "Revoked",
-      "revokedAt": "2026-11-19T09:13:28.780Z"
+      "revokedAt": "2026-11-19T09:24:11.679Z"
     }
   ],
   "cardRevealLogs": [
     {
-      "id": "craud-1795079608931",
+      "id": "craud-1795080251765",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-1",
@@ -1441,11 +1441,11 @@
       "viewerEmail": "sarah.lin@riseuplabs.com",
       "action": "unauthorized_attempt",
       "result": "Denied",
-      "timestamp": "2026-11-19T09:13:28.931Z",
+      "timestamp": "2026-11-19T09:24:11.765Z",
       "notes": "User Sarah Lin attempted reveal without owner visibility authorization."
     },
     {
-      "id": "craud-1795079608780",
+      "id": "craud-1795080251679",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1453,11 +1453,11 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "visibility_revoked",
       "result": "Success",
-      "timestamp": "2026-11-19T09:13:28.780Z",
+      "timestamp": "2026-11-19T09:24:11.679Z",
       "notes": "Card owner Wasiur Rahman revoked viewing permission from Sarah Lin"
     },
     {
-      "id": "craud-1795079608769",
+      "id": "craud-1795080251674",
       "cardId": "card-3",
       "cardName": "Local Currency BDT Operational Card",
       "viewerId": "usr-1",
@@ -1465,11 +1465,11 @@
       "viewerEmail": "sarah.lin@riseuplabs.com",
       "action": "unauthorized_attempt",
       "result": "Denied",
-      "timestamp": "2026-11-19T09:13:28.769Z",
+      "timestamp": "2026-11-19T09:24:11.674Z",
       "notes": "User Sarah Lin attempted reveal without owner visibility authorization."
     },
     {
-      "id": "craud-1795079608615",
+      "id": "craud-1795080251585",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-1",
@@ -1477,11 +1477,11 @@
       "viewerEmail": "sarah.lin@riseuplabs.com",
       "action": "reveal_masked",
       "result": "Success",
-      "timestamp": "2026-11-19T09:13:28.615Z",
+      "timestamp": "2026-11-19T09:24:11.585Z",
       "notes": "Card information revealed for 30s window. Verification: Password + Owner Authorization."
     },
     {
-      "id": "craud-1795079608482",
+      "id": "craud-1795080251497",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1489,11 +1489,11 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "visibility_granted",
       "result": "Success",
-      "timestamp": "2026-11-19T09:13:28.482Z",
+      "timestamp": "2026-11-19T09:24:11.497Z",
       "notes": "Card owner Wasiur Rahman granted viewing permission to Sarah Lin"
     },
     {
-      "id": "craud-1795079608473",
+      "id": "craud-1795080251491",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-admin",
@@ -1501,11 +1501,11 @@
       "viewerEmail": "nahian@riseuplabs.com",
       "action": "unauthorized_attempt",
       "result": "Denied",
-      "timestamp": "2026-11-19T09:13:28.473Z",
+      "timestamp": "2026-11-19T09:24:11.491Z",
       "notes": "User Abdullah Nahian attempted reveal without owner visibility authorization."
     },
     {
-      "id": "craud-1795079608343",
+      "id": "craud-1795080251396",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1513,11 +1513,11 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "failed_password",
       "result": "Denied",
-      "timestamp": "2026-11-19T09:13:28.343Z",
+      "timestamp": "2026-11-19T09:24:11.396Z",
       "notes": "Failed password verification attempt by Wasiur Rahman"
     },
     {
-      "id": "craud-1795079608175",
+      "id": "craud-1795080251294",
       "cardId": "card-1",
       "cardName": "AWS & Cloud Primary Visa",
       "viewerId": "usr-4",
@@ -1525,7 +1525,7 @@
       "viewerEmail": "wasiur@riseuplabs.com",
       "action": "reveal_masked",
       "result": "Success",
-      "timestamp": "2026-11-19T09:13:28.175Z",
+      "timestamp": "2026-11-19T09:24:11.294Z",
       "notes": "Card information revealed for 30s window. Verification: Password + Owner Authorization."
     }
   ],
@@ -2011,7 +2011,7 @@
   ],
   "accessRequests": [
     {
-      "id": "acc-req-1795079609171",
+      "id": "acc-req-1795080251892",
       "requestNumber": "ACC-2026-017",
       "requesterId": "usr-5",
       "requesterName": "Kazi Fahim",
@@ -2039,21 +2039,21 @@
           "assignedApproverName": "Abdullah Nahian",
           "isRequired": true,
           "status": "Approved",
-          "actionDate": "2026-11-19T09:13:29.179Z",
+          "actionDate": "2026-11-19T09:24:11.897Z",
           "actorName": "Abdullah Nahian"
         }
       ],
-      "createdAt": "2026-11-19T09:13:29.171Z",
-      "updatedAt": "2026-11-19T09:13:29.179Z",
+      "createdAt": "2026-11-19T09:24:11.892Z",
+      "updatedAt": "2026-11-19T09:24:11.897Z",
       "assignedAccountId": "acc-1",
       "assignedAccountEmail": "dev.ai1@riseuplabs.com",
       "assignedPlanName": "Team Workspace (5 Seats)",
-      "accessGrantedDate": "2026-11-19T09:13:29.179Z",
+      "accessGrantedDate": "2026-11-19T09:24:11.897Z",
       "accessGrantedById": "usr-admin",
       "accessGrantedByName": "Abdullah Nahian",
       "reviewedById": "usr-admin",
       "reviewedByName": "Abdullah Nahian",
-      "approvalDate": "2026-11-19T09:13:29.179Z",
+      "approvalDate": "2026-11-19T09:24:11.897Z",
       "accessNotes": "1-click approval authorized by Super Admin"
     },
     {
@@ -2146,7 +2146,7 @@
   ],
   "accessAssignments": [
     {
-      "id": "asgn-1795079609178",
+      "id": "asgn-1795080251897",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -2163,11 +2163,11 @@
       "status": "Active",
       "provisioningStatus": "Provisioned",
       "notes": "1-click approval authorized by Super Admin",
-      "createdAt": "2026-11-19T09:13:29.179Z",
-      "updatedAt": "2026-11-19T09:13:29.179Z"
+      "createdAt": "2026-11-19T09:24:11.897Z",
+      "updatedAt": "2026-11-19T09:24:11.897Z"
     },
     {
-      "id": "asgn-1795079608953",
+      "id": "asgn-1795080251777",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -2188,8 +2188,8 @@
       "status": "Revoked",
       "provisioningStatus": "Provisioned",
       "notes": "Testing zero-credential assignment | Revoked: Project completed",
-      "createdAt": "2026-11-19T09:13:28.953Z",
-      "updatedAt": "2026-11-19T09:13:28.972Z"
+      "createdAt": "2026-11-19T09:24:11.777Z",
+      "updatedAt": "2026-11-19T09:24:11.786Z"
     },
     {
       "id": "asgn-1",
@@ -2256,8 +2256,8 @@
   ],
   "accessHistory": [
     {
-      "id": "hist-1795079609179",
-      "assignmentId": "asgn-1795079609178",
+      "id": "hist-1795080251897",
+      "assignmentId": "asgn-1795080251897",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -2270,11 +2270,11 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Initial grant via 1-click approval for request ACC-2026-017",
-      "timestamp": "2026-11-19T09:13:29.179Z"
+      "timestamp": "2026-11-19T09:24:11.897Z"
     },
     {
-      "id": "hist-1795079608972",
-      "assignmentId": "asgn-1795079608953",
+      "id": "hist-1795080251786",
+      "assignmentId": "asgn-1795080251777",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -2287,11 +2287,11 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Project completed",
-      "timestamp": "2026-11-19T09:13:28.973Z"
+      "timestamp": "2026-11-19T09:24:11.786Z"
     },
     {
-      "id": "hist-1795079608964",
-      "assignmentId": "asgn-1795079608953",
+      "id": "hist-1795080251782",
+      "assignmentId": "asgn-1795080251777",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -2305,11 +2305,11 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Access extended by administrator",
-      "timestamp": "2026-11-19T09:13:28.964Z"
+      "timestamp": "2026-11-19T09:24:11.782Z"
     },
     {
-      "id": "hist-1795079608953",
-      "assignmentId": "asgn-1795079608953",
+      "id": "hist-1795080251777",
+      "assignmentId": "asgn-1795080251777",
       "serviceId": "srv-1",
       "serviceName": "ChatGPT Team / Plus",
       "accountId": "acc-1",
@@ -2322,7 +2322,7 @@
       "actorId": "usr-admin",
       "actorName": "Abdullah Nahian",
       "reasonOrNotes": "Testing zero-credential assignment",
-      "timestamp": "2026-11-19T09:13:28.953Z"
+      "timestamp": "2026-11-19T09:24:11.777Z"
     },
     {
       "id": "hist-1",
@@ -2481,14 +2481,14 @@
       "updatedAt": "2026-01-01T00:00:00Z"
     },
     {
-      "id": "rsn-1795079609145",
+      "id": "rsn-1795080251878",
       "name": "Security Vulnerability Patching (High Priority)",
       "description": "Dedicated access for urgent CVE remediation sprint",
       "displayOrder": 2,
       "isEnabled": false,
       "isArchived": true,
-      "createdAt": "2026-11-19T09:13:29.145Z",
-      "updatedAt": "2026-11-19T09:13:29.162Z"
+      "createdAt": "2026-11-19T09:24:11.878Z",
+      "updatedAt": "2026-11-19T09:24:11.887Z"
     }
   ],
   "emailTemplates": [
@@ -2634,7 +2634,7 @@
   ],
   "emailLogs": [
     {
-      "id": "elog-1795079613196",
+      "id": "elog-1795080255880",
       "templateKey": "employee_invitation",
       "templateName": "Employee Workspace Invitation",
       "recipientEmail": "rifat.onboard@riseuplabs.com",
@@ -2642,10 +2642,10 @@
       "subject": "Welcome to RLTSMS – Activate your Riseup Labs account",
       "status": "Sent",
       "attemptCount": 1,
-      "dispatchedAt": "2026-11-19T09:13:33.196Z"
+      "dispatchedAt": "2026-11-19T09:24:15.880Z"
     },
     {
-      "id": "elog-1795079609687",
+      "id": "elog-1795080252212",
       "templateKey": "employee_invitation",
       "templateName": "Employee Workspace Invitation (Resend)",
       "recipientEmail": "tanvir.test@riseuplabs.com",
@@ -2653,10 +2653,10 @@
       "subject": "[Resend] Welcome to RLTSMS – Activate your Riseup Labs account",
       "status": "Sent",
       "attemptCount": 1,
-      "dispatchedAt": "2026-11-19T09:13:29.687Z"
+      "dispatchedAt": "2026-11-19T09:24:12.211Z"
     },
     {
-      "id": "elog-1795079609672",
+      "id": "elog-1795080252205",
       "templateKey": "employee_invitation",
       "templateName": "Employee Workspace Invitation",
       "recipientEmail": "tanvir.test@riseuplabs.com",
@@ -2664,10 +2664,10 @@
       "subject": "Welcome to RLTSMS – Activate your Riseup Labs account",
       "status": "Sent",
       "attemptCount": 1,
-      "dispatchedAt": "2026-11-19T09:13:29.672Z"
+      "dispatchedAt": "2026-11-19T09:24:12.206Z"
     },
     {
-      "id": "elog-1795079609382",
+      "id": "elog-1795080252028",
       "templateKey": "employee_invitation",
       "templateName": "Employee Workspace Invitation",
       "recipientEmail": "nafis.sadik@riseuplabs.com",
@@ -2675,10 +2675,10 @@
       "subject": "Welcome to RLTSMS – Activate your Riseup Labs account",
       "status": "Sent",
       "attemptCount": 1,
-      "dispatchedAt": "2026-11-19T09:13:29.382Z"
+      "dispatchedAt": "2026-11-19T09:24:12.028Z"
     },
     {
-      "id": "elog-1795079609179",
+      "id": "elog-1795080251897",
       "templateKey": "access_notification",
       "templateName": "Tool & Service Access Status Notice",
       "recipientEmail": "kazi.fahim@riseuplabs.com",
@@ -2686,11 +2686,11 @@
       "subject": "RLTSMS Access Granted: ChatGPT Team / Plus",
       "status": "Sent",
       "attemptCount": 1,
-      "providerMessageId": "msg_1795079609179",
-      "dispatchedAt": "2026-11-19T09:13:29.179Z"
+      "providerMessageId": "msg_1795080251897",
+      "dispatchedAt": "2026-11-19T09:24:11.897Z"
     },
     {
-      "id": "elog-1795079609048",
+      "id": "elog-1795080251825",
       "templateKey": "otp_verification",
       "templateName": "OTP Verification Security Code",
       "recipientEmail": "test-admin@riseuplabs.com",
@@ -2698,8 +2698,8 @@
       "subject": "[TEST] [RLTSMS Security] Your verification code is SAMPLE",
       "status": "Sent",
       "attemptCount": 1,
-      "providerMessageId": "msg_test_1795079609048",
-      "dispatchedAt": "2026-11-19T09:13:29.048Z"
+      "providerMessageId": "msg_test_1795080251825",
+      "dispatchedAt": "2026-11-19T09:24:11.825Z"
     },
     {
       "id": "elog-1",
@@ -2740,38 +2740,38 @@
   ],
   "notifications": [
     {
-      "id": "notif-1795079609179",
+      "id": "notif-1795080251897",
       "recipientId": "usr-5",
       "title": "Access Authorized: ChatGPT Team / Plus",
       "message": "Your access request ACC-2026-017 for ChatGPT Team / Plus has been approved and provisioned through 2027-02-15.",
       "type": "access",
       "isRead": false,
-      "createdAt": "2026-11-19T09:13:29.179Z",
+      "createdAt": "2026-11-19T09:24:11.897Z",
       "linkAction": {
         "view": "access"
       }
     },
     {
-      "id": "notif-1795079609171",
+      "id": "notif-1795080251892",
       "recipientId": "usr-admin",
       "title": "New Access Request: ChatGPT Team / Plus",
       "message": "Kazi Fahim (Finance & Admin) requested Shared Team Seat on ChatGPT Team / Plus. Reason: Project Requirement.",
       "type": "access",
       "isRead": false,
-      "createdAt": "2026-11-19T09:13:29.171Z",
+      "createdAt": "2026-11-19T09:24:11.892Z",
       "linkAction": {
         "view": "access",
-        "id": "acc-req-1795079609171"
+        "id": "acc-req-1795080251892"
       }
     },
     {
-      "id": "notif-1795079608973",
+      "id": "notif-1795080251786",
       "recipientId": "usr-1",
       "title": "Access Revoked: ChatGPT Team / Plus",
       "message": "Your access to ChatGPT Team / Plus has been revoked. Reason: Project completed.",
       "type": "access",
       "isRead": false,
-      "createdAt": "2026-11-19T09:13:28.973Z",
+      "createdAt": "2026-11-19T09:24:11.786Z",
       "linkAction": {
         "view": "access"
       }
@@ -2830,118 +2830,118 @@
   ],
   "auditLogs": [
     {
-      "id": "aud-1795079613409",
-      "timestamp": "2026-11-19T09:13:33.409Z",
-      "userId": "usr-1795079613097",
+      "id": "aud-1795080256075",
+      "timestamp": "2026-11-19T09:24:16.075Z",
+      "userId": "usr-1795080255798",
       "userName": "Rifat Chowdhury",
       "action": "User Login",
       "entity": "Authentication",
-      "entityId": "usr-1795079613097",
+      "entityId": "usr-1795080255798",
       "details": "User rifat.onboard@riseuplabs.com successfully logged in."
     },
     {
-      "id": "aud-1795079613307",
-      "timestamp": "2026-11-19T09:13:33.307Z",
-      "userId": "usr-1795079613097",
+      "id": "aud-1795080255975",
+      "timestamp": "2026-11-19T09:24:15.975Z",
+      "userId": "usr-1795080255798",
       "userName": "Rifat Chowdhury",
       "action": "Account Activated",
       "entity": "Users",
-      "entityId": "usr-1795079613097",
+      "entityId": "usr-1795080255798",
       "details": "Employee Rifat Chowdhury (rifat.onboard@riseuplabs.com) set account password and activated account."
     },
     {
-      "id": "aud-1795079613196",
-      "timestamp": "2026-11-19T09:13:33.196Z",
+      "id": "aud-1795080255880",
+      "timestamp": "2026-11-19T09:24:15.880Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Add Employee Account",
       "entity": "Organization",
-      "entityId": "usr-1795079613097",
+      "entityId": "usr-1795080255798",
       "details": "Added new employee Rifat Chowdhury (rifat.onboard@riseuplabs.com) to Engineering. Reporting to Department Head."
     },
     {
-      "id": "aud-1795079613091",
-      "timestamp": "2026-11-19T09:13:33.091Z",
+      "id": "aud-1795080255794",
+      "timestamp": "2026-11-19T09:24:15.794Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Delete Employee Account",
       "entity": "Organization",
-      "entityId": "usr-1795079609504",
+      "entityId": "usr-1795080252112",
       "details": "Removed employee account for Tanvir Hossain (tanvir.test@riseuplabs.com). Revoked associated assignments."
     },
     {
-      "id": "aud-1795079613082",
-      "timestamp": "2026-11-19T09:13:33.082Z",
-      "userId": "usr-1795079609504",
+      "id": "aud-1795080255788",
+      "timestamp": "2026-11-19T09:24:15.788Z",
+      "userId": "usr-1795080252112",
       "userName": "Tanvir Hossain",
       "action": "User Login",
       "entity": "Authentication",
-      "entityId": "usr-1795079609504",
+      "entityId": "usr-1795080252112",
       "details": "User tanvir.test@riseuplabs.com successfully logged in."
     },
     {
-      "id": "aud-1795079612987",
-      "timestamp": "2026-11-19T09:13:32.987Z",
+      "id": "aud-1795080255710",
+      "timestamp": "2026-11-19T09:24:15.710Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Activate Account",
       "entity": "User",
-      "entityId": "usr-1795079609504",
+      "entityId": "usr-1795080252112",
       "details": "Activated account for Tanvir Hossain (tanvir.test@riseuplabs.com)."
     },
     {
-      "id": "aud-1795079612982",
-      "timestamp": "2026-11-19T09:13:32.982Z",
+      "id": "aud-1795080255707",
+      "timestamp": "2026-11-19T09:24:15.707Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Reset Employee Password",
       "entity": "Organization",
-      "entityId": "usr-1795079609504",
+      "entityId": "usr-1795080252112",
       "details": "Administrator changed/reset account password for employee Tanvir Hossain (tanvir.test@riseuplabs.com)."
     },
     {
-      "id": "aud-1795079609687",
-      "timestamp": "2026-11-19T09:13:29.687Z",
+      "id": "aud-1795080252212",
+      "timestamp": "2026-11-19T09:24:12.211Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Resend Employee Invitation",
       "entity": "Organization",
-      "entityId": "usr-1795079609504",
+      "entityId": "usr-1795080252112",
       "details": "Resent activation email to Tanvir Hossain (tanvir.test@riseuplabs.com)."
     },
     {
-      "id": "aud-1795079609672",
-      "timestamp": "2026-11-19T09:13:29.672Z",
+      "id": "aud-1795080252206",
+      "timestamp": "2026-11-19T09:24:12.206Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Add Employee Account",
       "entity": "Organization",
-      "entityId": "usr-1795079609504",
+      "entityId": "usr-1795080252112",
       "details": "Added new employee Tanvir Hossain (tanvir.test@riseuplabs.com) to Engineering. Reporting to Department Head."
     },
     {
-      "id": "aud-1795079609495",
-      "timestamp": "2026-11-19T09:13:29.495Z",
+      "id": "aud-1795080252107",
+      "timestamp": "2026-11-19T09:24:12.107Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Delete Department & Auto-Unassign",
       "entity": "Department",
-      "entityId": "dept-1795079609470",
+      "entityId": "dept-1795080252086",
       "details": "Deleted department \"Game Development\". Automatically unassigned 1 employee(s) and removed 0 child team(s)."
     },
     {
-      "id": "aud-1795079609489",
-      "timestamp": "2026-11-19T09:13:29.489Z",
+      "id": "aud-1795080252102",
+      "timestamp": "2026-11-19T09:24:12.102Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Delete Team & Auto-Unassign",
       "entity": "Team",
-      "entityId": "team-1795079609476",
+      "entityId": "team-1795080252092",
       "details": "Deleted team \"Unreal Engine Core\". Automatically unassigned 1 employee(s) from this team."
     },
     {
-      "id": "aud-1795079609484",
-      "timestamp": "2026-11-19T09:13:29.484Z",
+      "id": "aud-1795080252098",
+      "timestamp": "2026-11-19T09:24:12.098Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Update Employee Profile",
@@ -2950,48 +2950,48 @@
       "details": "Updated profile details for employee Abdullah Nahian (nahian@riseuplabs.com) [Dept: Game Development, Team: Unreal Engine Core]."
     },
     {
-      "id": "aud-1795079609477",
-      "timestamp": "2026-11-19T09:13:29.477Z",
+      "id": "aud-1795080252093",
+      "timestamp": "2026-11-19T09:24:12.093Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Create Team",
       "entity": "Team",
-      "entityId": "team-1795079609476",
+      "entityId": "team-1795080252092",
       "details": "Created team \"Unreal Engine Core\" under department \"Game Development\"."
     },
     {
-      "id": "aud-1795079609470",
-      "timestamp": "2026-11-19T09:13:29.470Z",
+      "id": "aud-1795080252086",
+      "timestamp": "2026-11-19T09:24:12.086Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Create Department",
       "entity": "Department",
-      "entityId": "dept-1795079609470",
+      "entityId": "dept-1795080252086",
       "details": "Created department \"Game Development\" with lead Abdullah Nahian."
     },
     {
-      "id": "aud-1795079609462",
-      "timestamp": "2026-11-19T09:13:29.462Z",
+      "id": "aud-1795080252079",
+      "timestamp": "2026-11-19T09:24:12.079Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Delete Permission",
       "entity": "RBAC",
-      "entityId": "perm-1795079609413",
+      "entityId": "perm-1795080252050",
       "details": "Deleted permission [custom:feature_access] \"Custom Feature Access Updated\". Removed from all assigned roles."
     },
     {
-      "id": "aud-1795079609457",
-      "timestamp": "2026-11-19T09:13:29.457Z",
+      "id": "aud-1795080252074",
+      "timestamp": "2026-11-19T09:24:12.074Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Delete Role",
       "entity": "RBAC",
-      "entityId": "role-1795079609431",
+      "entityId": "role-1795080252061",
       "details": "Deleted role \"QA Lead\". Removed role assignment from 1 user(s)."
     },
     {
-      "id": "aud-1795079609450",
-      "timestamp": "2026-11-19T09:13:29.450Z",
+      "id": "aud-1795080252069",
+      "timestamp": "2026-11-19T09:24:12.069Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Update User Roles",
@@ -3000,158 +3000,158 @@
       "details": "Updated roles for Abdullah Nahian (nahian@riseuplabs.com) to: [Super Admin, QA Lead]."
     },
     {
-      "id": "aud-1795079609441",
-      "timestamp": "2026-11-19T09:13:29.441Z",
+      "id": "aud-1795080252065",
+      "timestamp": "2026-11-19T09:24:12.065Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Update Role Permissions",
       "entity": "RBAC",
-      "entityId": "role-1795079609431",
+      "entityId": "role-1795080252061",
       "details": "Updated role \"QA Lead\". Permissions now assigned: 3 items."
     },
     {
-      "id": "aud-1795079609431",
-      "timestamp": "2026-11-19T09:13:29.431Z",
+      "id": "aud-1795080252061",
+      "timestamp": "2026-11-19T09:24:12.061Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Create Dynamic Role",
       "entity": "RBAC",
-      "entityId": "role-1795079609431",
+      "entityId": "role-1795080252061",
       "details": "Created new custom role \"QA Lead\" with 2 initial permissions."
     },
     {
-      "id": "aud-1795079609421",
-      "timestamp": "2026-11-19T09:13:29.421Z",
+      "id": "aud-1795080252056",
+      "timestamp": "2026-11-19T09:24:12.056Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Update Permission",
       "entity": "RBAC",
-      "entityId": "perm-1795079609413",
+      "entityId": "perm-1795080252050",
       "details": "Updated permission [custom:feature_access] \"Custom Feature Access Updated\"."
     },
     {
-      "id": "aud-1795079609413",
-      "timestamp": "2026-11-19T09:13:29.413Z",
+      "id": "aud-1795080252050",
+      "timestamp": "2026-11-19T09:24:12.050Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Create Dynamic Permission",
       "entity": "RBAC",
-      "entityId": "perm-1795079609413",
+      "entityId": "perm-1795080252050",
       "details": "Created custom permission [custom:feature_access] \"Custom Feature Access\" under custom."
     },
     {
-      "id": "aud-1795079609404",
-      "timestamp": "2026-11-19T09:13:29.404Z",
+      "id": "aud-1795080252045",
+      "timestamp": "2026-11-19T09:24:12.045Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Deactivate Account",
       "entity": "User",
-      "entityId": "usr-1795079609228",
+      "entityId": "usr-1795080251920",
       "details": "Deactivated account for Nafis Sadik (nafis.sadik@riseuplabs.com)."
     },
     {
-      "id": "aud-1795079609395",
-      "timestamp": "2026-11-19T09:13:29.395Z",
+      "id": "aud-1795080252037",
+      "timestamp": "2026-11-19T09:24:12.037Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Activate Account",
       "entity": "User",
-      "entityId": "usr-1795079609228",
+      "entityId": "usr-1795080251920",
       "details": "Activated account for Nafis Sadik (nafis.sadik@riseuplabs.com)."
     },
     {
-      "id": "aud-1795079609382",
-      "timestamp": "2026-11-19T09:13:29.382Z",
+      "id": "aud-1795080252028",
+      "timestamp": "2026-11-19T09:24:12.028Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Add Employee Account",
       "entity": "Organization",
-      "entityId": "usr-1795079609228",
+      "entityId": "usr-1795080251920",
       "details": "Added new employee Nafis Sadik (nafis.sadik@riseuplabs.com) to Engineering. Reporting to Tariq Ahmed."
     },
     {
-      "id": "aud-1795079609179",
-      "timestamp": "2026-11-19T09:13:29.179Z",
+      "id": "aud-1795080251897",
+      "timestamp": "2026-11-19T09:24:11.897Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Approve & Assign Access",
       "entity": "AccessRequest",
-      "entityId": "acc-req-1795079609171",
+      "entityId": "acc-req-1795080251892",
       "details": "Approved request ACC-2026-017 and assigned account dev.ai1@riseuplabs.com to Kazi Fahim until 2027-02-15."
     },
     {
-      "id": "aud-1795079609171",
-      "timestamp": "2026-11-19T09:13:29.171Z",
+      "id": "aud-1795080251892",
+      "timestamp": "2026-11-19T09:24:11.892Z",
       "userId": "usr-5",
       "userName": "Kazi Fahim",
       "action": "Submit Tool Access Request",
       "entity": "AccessRequest",
-      "entityId": "acc-req-1795079609171",
+      "entityId": "acc-req-1795080251892",
       "details": "Kazi Fahim submitted access request ACC-2026-017 for ChatGPT Team / Plus (Shared Team Seat). Reason: Project Requirement."
     },
     {
-      "id": "aud-1795079609162",
-      "timestamp": "2026-11-19T09:13:29.162Z",
+      "id": "aud-1795080251887",
+      "timestamp": "2026-11-19T09:24:11.887Z",
       "userId": "usr-admin",
       "userName": "Administrator",
       "action": "Archive Predefined Access Reason",
       "entity": "Access Management",
-      "entityId": "rsn-1795079609145",
+      "entityId": "rsn-1795080251878",
       "details": "Archived predefined access reason: Security Vulnerability Patching (High Priority)"
     },
     {
-      "id": "aud-1795079609154",
-      "timestamp": "2026-11-19T09:13:29.154Z",
+      "id": "aud-1795080251882",
+      "timestamp": "2026-11-19T09:24:11.882Z",
       "userId": "usr-admin",
       "userName": "Administrator",
       "action": "Update Predefined Access Reason",
       "entity": "Access Management",
-      "entityId": "rsn-1795079609145",
+      "entityId": "rsn-1795080251878",
       "details": "Updated predefined access reason: Security Vulnerability Patching (High Priority)"
     },
     {
-      "id": "aud-1795079609145",
-      "timestamp": "2026-11-19T09:13:29.145Z",
+      "id": "aud-1795080251878",
+      "timestamp": "2026-11-19T09:24:11.878Z",
       "userId": "usr-admin",
       "userName": "Administrator",
       "action": "Create Predefined Access Reason",
       "entity": "Access Management",
-      "entityId": "rsn-1795079609145",
+      "entityId": "rsn-1795080251878",
       "details": "Created predefined access reason: Security Vulnerability Patching"
     },
     {
-      "id": "aud-1795079608973",
-      "timestamp": "2026-11-19T09:13:28.973Z",
+      "id": "aud-1795080251786",
+      "timestamp": "2026-11-19T09:24:11.786Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Revoke Account Access",
       "entity": "Access Management",
-      "entityId": "asgn-1795079608953",
+      "entityId": "asgn-1795080251777",
       "details": "Revoked access on ChatGPT Team / Plus for Sarah Lin. Reason: Project completed."
     },
     {
-      "id": "aud-1795079608964",
-      "timestamp": "2026-11-19T09:13:28.964Z",
+      "id": "aud-1795080251782",
+      "timestamp": "2026-11-19T09:24:11.782Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Extend Account Access",
       "entity": "Access Management",
-      "entityId": "asgn-1795079608953",
+      "entityId": "asgn-1795080251777",
       "details": "Extended access on ChatGPT Team / Plus for Sarah Lin from 2026-12-15 to 2027-01-15. Reason: N/A."
     },
     {
-      "id": "aud-1795079608954",
-      "timestamp": "2026-11-19T09:13:28.954Z",
+      "id": "aud-1795080251777",
+      "timestamp": "2026-11-19T09:24:11.777Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Grant Account Access",
       "entity": "AccessAssignment",
-      "entityId": "asgn-1795079608953",
+      "entityId": "asgn-1795080251777",
       "details": "Granted user access to ChatGPT Team / Plus (dev.ai1@riseuplabs.com) for Sarah Lin."
     },
     {
-      "id": "aud-1795079608931",
-      "timestamp": "2026-11-19T09:13:28.931Z",
+      "id": "aud-1795080251765",
+      "timestamp": "2026-11-19T09:24:11.765Z",
       "userId": "usr-1",
       "userName": "Sarah Lin",
       "action": "Card Reveal - Unauthorized",
@@ -3160,8 +3160,8 @@
       "details": "Unauthorized attempt by Sarah Lin to reveal card AWS & Cloud Primary Visa (Not authorized by owner)."
     },
     {
-      "id": "aud-1795079608780",
-      "timestamp": "2026-11-19T09:13:28.780Z",
+      "id": "aud-1795080251679",
+      "timestamp": "2026-11-19T09:24:11.679Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Visibility Revoked",
@@ -3170,8 +3170,8 @@
       "details": "Revoked visibility permission for user Sarah Lin on card AWS & Cloud Primary Visa."
     },
     {
-      "id": "aud-1795079608769",
-      "timestamp": "2026-11-19T09:13:28.769Z",
+      "id": "aud-1795080251674",
+      "timestamp": "2026-11-19T09:24:11.674Z",
       "userId": "usr-1",
       "userName": "Sarah Lin",
       "action": "Card Reveal - Unauthorized",
@@ -3180,8 +3180,8 @@
       "details": "Unauthorized attempt by Sarah Lin to reveal card Local Currency BDT Operational Card (Not authorized by owner)."
     },
     {
-      "id": "aud-1795079608615",
-      "timestamp": "2026-11-19T09:13:28.615Z",
+      "id": "aud-1795080251585",
+      "timestamp": "2026-11-19T09:24:11.585Z",
       "userId": "usr-1",
       "userName": "Sarah Lin",
       "action": "Card Information Revealed",
@@ -3190,8 +3190,8 @@
       "details": "Card AWS & Cloud Primary Visa revealed to Sarah Lin following password authentication."
     },
     {
-      "id": "aud-1795079608482",
-      "timestamp": "2026-11-19T09:13:28.482Z",
+      "id": "aud-1795080251497",
+      "timestamp": "2026-11-19T09:24:11.497Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Visibility Granted",
@@ -3200,8 +3200,8 @@
       "details": "Granted visibility permission for user Sarah Lin on card AWS & Cloud Primary Visa."
     },
     {
-      "id": "aud-1795079608473",
-      "timestamp": "2026-11-19T09:13:28.473Z",
+      "id": "aud-1795080251491",
+      "timestamp": "2026-11-19T09:24:11.491Z",
       "userId": "usr-admin",
       "userName": "Abdullah Nahian",
       "action": "Card Reveal - Unauthorized",
@@ -3210,8 +3210,8 @@
       "details": "Unauthorized attempt by Abdullah Nahian to reveal card AWS & Cloud Primary Visa (Not authorized by owner)."
     },
     {
-      "id": "aud-1795079608343",
-      "timestamp": "2026-11-19T09:13:28.343Z",
+      "id": "aud-1795080251396",
+      "timestamp": "2026-11-19T09:24:11.396Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Reveal - Password Failed",
@@ -3220,8 +3220,8 @@
       "details": "Failed password verification attempting to reveal card AWS & Cloud Primary Visa"
     },
     {
-      "id": "aud-1795079608175",
-      "timestamp": "2026-11-19T09:13:28.175Z",
+      "id": "aud-1795080251295",
+      "timestamp": "2026-11-19T09:24:11.295Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Card Information Revealed",
@@ -3230,8 +3230,8 @@
       "details": "Card AWS & Cloud Primary Visa revealed to Wasiur Rahman following password authentication."
     },
     {
-      "id": "aud-1795079607981",
-      "timestamp": "2026-11-19T09:13:27.981Z",
+      "id": "aud-1795080251197",
+      "timestamp": "2026-11-19T09:24:11.197Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "Failed Login Attempt",
@@ -3240,8 +3240,8 @@
       "details": "Failed password attempt for user wasiur@riseuplabs.com"
     },
     {
-      "id": "aud-1795079607782",
-      "timestamp": "2026-11-19T09:13:27.782Z",
+      "id": "aud-1795080251100",
+      "timestamp": "2026-11-19T09:24:11.100Z",
       "userId": "usr-4",
       "userName": "Wasiur Rahman",
       "action": "User Login",

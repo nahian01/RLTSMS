@@ -1676,7 +1676,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const targetAccount = accounts.find((a) => a.id === assignmentData.accountId);
     if (!targetAccount) return { success: false, message: 'Selected account not found' };
 
-    if (targetAccount.serviceId !== targetReq.serviceId) {
+    const isServiceMatch =
+      targetAccount.serviceId === targetReq.serviceId ||
+      (targetAccount.serviceName &&
+        targetReq.serviceName &&
+        targetAccount.serviceName.toLowerCase().trim() === targetReq.serviceName.toLowerCase().trim());
+    if (!isServiceMatch) {
       return { success: false, message: 'Account does not belong to the requested service' };
     }
 

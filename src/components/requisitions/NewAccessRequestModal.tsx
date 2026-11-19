@@ -60,7 +60,15 @@ export const NewAccessRequestModal: React.FC<NewAccessRequestModalProps> = ({
   if (!isOpen) return null;
 
   const selectedService = services.find((s) => s.id === serviceId);
-  const serviceAccounts = accounts.filter((a) => a.serviceId === serviceId && a.accountStatus === 'Active');
+  const serviceAccounts = accounts.filter(
+    (a) =>
+      (a.serviceId === serviceId ||
+        (selectedService && a.serviceName.toLowerCase().trim() === selectedService.name.toLowerCase().trim())) &&
+      a.accountStatus !== 'Inactive' &&
+      a.accountStatus !== 'Suspended' &&
+      a.accountStatus !== 'Expired' &&
+      a.accountStatus !== 'Cancelled'
+  );
 
   // Preview the access workflow
   const accessWorkflow =

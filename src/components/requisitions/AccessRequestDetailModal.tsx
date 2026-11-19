@@ -55,10 +55,21 @@ export const AccessRequestDetailModal: React.FC<AccessRequestDetailModalProps> =
         setSelectedAccountId(accessRequest.preferredAccountId);
       } else {
         const matching = accounts.filter(
-          (a) => a.serviceId === accessRequest.serviceId && a.accountStatus === 'Active'
+          (a) =>
+            (a.serviceId === accessRequest.serviceId ||
+              (a.serviceName &&
+                accessRequest.serviceName &&
+                a.serviceName.toLowerCase().trim() === accessRequest.serviceName.toLowerCase().trim())) &&
+            a.accountStatus !== 'Inactive' &&
+            a.accountStatus !== 'Suspended' &&
+            a.accountStatus !== 'Expired' &&
+            a.accountStatus !== 'Cancelled'
         );
         if (matching.length > 0) {
-          setSelectedAccountId(matching[0].id);
+          const availableCandidate = matching.find(
+            (a) => !a.seatLimit || (a.allocatedSeats || 0) < a.seatLimit
+          );
+          setSelectedAccountId(availableCandidate?.id || matching[0].id);
         }
       }
       setActiveAction(null);
@@ -74,7 +85,15 @@ export const AccessRequestDetailModal: React.FC<AccessRequestDetailModalProps> =
 
   // Filter accounts for this tool
   const matchingAccounts = accounts.filter(
-    (a) => a.serviceId === accessRequest.serviceId && a.accountStatus === 'Active'
+    (a) =>
+      (a.serviceId === accessRequest.serviceId ||
+        (a.serviceName &&
+          accessRequest.serviceName &&
+          a.serviceName.toLowerCase().trim() === accessRequest.serviceName.toLowerCase().trim())) &&
+      a.accountStatus !== 'Inactive' &&
+      a.accountStatus !== 'Suspended' &&
+      a.accountStatus !== 'Expired' &&
+      a.accountStatus !== 'Cancelled'
   );
 
   // If no exact match by serviceId, provide all accounts as fallback options

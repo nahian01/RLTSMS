@@ -66,7 +66,17 @@ export const DashboardView: React.FC = () => {
 
   // Dynamic calculations from live store data (zero hardcoded numbers)
   const activeSubs = useMemo(() => subscriptions.filter((s) => s.status === 'Active'), [subscriptions]);
-  const activeAccounts = useMemo(() => accounts.filter((a) => a.accountStatus === 'Active'), [accounts]);
+  const activeAccounts = useMemo(
+    () =>
+      accounts.filter(
+        (a) =>
+          a.accountStatus !== 'Inactive' &&
+          a.accountStatus !== 'Suspended' &&
+          a.accountStatus !== 'Expired' &&
+          a.accountStatus !== 'Cancelled'
+      ),
+    [accounts]
+  );
   const activeAssignments = useMemo(
     () => accessAssignments.filter((a) => a.status === 'Active'),
     [accessAssignments]
