@@ -47,6 +47,8 @@ orgRouter.post('/users', (req: Request, res: Response) => {
   const lead = reportingLeadId ? state.users.find((u) => u.id === reportingLeadId) : undefined;
   const currentUser = state.users.find((u) => u.id === currentUserId);
 
+  const activationToken = `act_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
   const newUser: User = {
     id: `usr-${Date.now()}`,
     name: name.trim(),
@@ -61,6 +63,7 @@ orgRouter.post('/users', (req: Request, res: Response) => {
     reportingLeadName: lead ? lead.name : undefined,
     roles,
     accountStatus: 'Pending Invitation',
+    invitationToken: activationToken,
     invitationSentAt: new Date().toISOString(),
     invitationExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
     cardPermissionLevel: 'none',
@@ -69,7 +72,7 @@ orgRouter.post('/users', (req: Request, res: Response) => {
   const tempPass = hashPassword('RiseupLabs@2026');
 
   dbStore.mutate((s) => {
-    s.users.push({ ...newUser, passwordHash: tempPass });
+    s.users.push({ ...newUser, passwordHash: tempPass, invitationToken: activationToken });
 
     // Log invitation email dispatch with 48h activation link
     s.emailLogs.unshift({
@@ -101,6 +104,7 @@ orgRouter.post('/users', (req: Request, res: Response) => {
     recipientEmail: newUser.email,
     recipientName: newUser.name,
     inviterName: currentUser ? currentUser.name : 'System Administrator',
+    activationToken,
   }).catch((err) => {
     console.error('[Organization] SMTP dispatch error:', err.message);
   });
@@ -122,10 +126,12 @@ orgRouter.post('/users/:id/resend', async (req: Request, res: Response) => {
   const currentUser = state.users.find((u) => u.id === currentUserId);
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+  const newActivationToken = `act_resend_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
   dbStore.mutate((s) => {
     const u = s.users.find((x) => x.id === id);
     if (u) {
+      u.invitationToken = newActivationToken;
       u.invitationSentAt = now;
       u.invitationExpiresAt = expiresAt;
       u.accountStatus = 'Pending Invitation';
@@ -160,6 +166,7 @@ orgRouter.post('/users/:id/resend', async (req: Request, res: Response) => {
     recipientEmail: targetUser.email,
     recipientName: targetUser.name,
     inviterName: currentUser ? currentUser.name : 'System Administrator',
+    activationToken: newActivationToken,
   });
 
   return res.json({

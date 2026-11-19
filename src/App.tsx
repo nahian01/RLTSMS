@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { LoginPage } from './components/auth/LoginPage';
+import { ActivateAccountPage } from './components/auth/ActivateAccountPage';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { CommandPalette } from './components/common/CommandPalette';
@@ -126,6 +127,31 @@ const MainLayout: React.FC = () => {
 
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useApp();
+  const [forceLogin, setForceLogin] = useState(false);
+
+  // Check URL query parameters and pathname for account activation token
+  const urlParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(
+    window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
+  );
+  const activationToken = urlParams.get('token') || hashParams.get('token');
+  const isActivateRoute =
+    !forceLogin &&
+    (window.location.pathname.startsWith('/activate') ||
+      Boolean(activationToken) ||
+      urlParams.get('activate') === 'true');
+
+  if (isActivateRoute) {
+    return (
+      <ActivateAccountPage
+        token={activationToken || ''}
+        onGoToLogin={() => {
+          window.history.replaceState({}, document.title, '/');
+          setForceLogin(true);
+        }}
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginPage />;

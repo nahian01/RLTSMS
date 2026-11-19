@@ -234,7 +234,8 @@ export const OrganizationView: React.FC = () => {
   };
 
   const copyMagicLink = (user: User) => {
-    const magicLink = `${window.location.origin}/activate?token=act_${user.id}_${Date.now()}`;
+    const token = user.invitationToken || `act_${user.id}_${Date.now()}`;
+    const magicLink = `${window.location.origin}/activate?token=${encodeURIComponent(token)}`;
     navigator.clipboard.writeText(magicLink);
     setCopiedId(user.id);
     setTimeout(() => setCopiedId(null), 2500);

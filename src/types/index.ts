@@ -34,6 +34,7 @@ export interface User {
   accountStatus: 'Active' | 'Pending Invitation' | 'Expired Invitation' | 'Inactive';
   invitationSentAt?: string;
   invitationExpiresAt?: string;
+  invitationToken?: string;
   cardPermissionLevel?: CardPermissionLevel;
   avatar?: string;
 }

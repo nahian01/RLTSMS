@@ -749,6 +749,82 @@ test('Employee Management: Resend Invitation, Change Password, and Remove Employ
   assert.strictEqual(targetInStore, undefined, 'Employee must be removed from store');
 });
 
+test('Employee Onboarding: Token Verification, Password Setup, Account Activation, and Direct Login', async () => {
+  // 1. Admin invites a new employee
+  const inviteRes = await apiRequest('/api/org/users', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Rifat Chowdhury',
+      email: 'rifat.onboard@riseuplabs.com',
+      phone: '+880 1712-998877',
+      designation: 'Senior Cloud Engineer',
+      departmentId: 'dept-eng',
+      roles: ['Employee'],
+    },
+  });
+
+  assert.strictEqual(inviteRes.status, 201, 'Inviting employee should return 201');
+  assert.strictEqual(inviteRes.data.accountStatus, 'Pending Invitation');
+  const token = inviteRes.data.invitationToken;
+  assert.ok(token, 'Must return an invitation activation token');
+
+  // 2. Invited employee opens the link: Verify Token Endpoint
+  // 2a. Reject non-existent token
+  const invalidTokenRes = await apiRequest('/api/auth/verify-token?token=non_existent_fake_token', {
+    method: 'GET',
+  });
+  assert.strictEqual(invalidTokenRes.status, 404, 'Unknown token must return 404');
+  assert.strictEqual(invalidTokenRes.data.valid, false);
+
+  // 2b. Accept valid invitation token
+  const verifyRes = await apiRequest(`/api/auth/verify-token?token=${encodeURIComponent(token)}`, {
+    method: 'GET',
+  });
+  assert.strictEqual(verifyRes.status, 200, 'Valid token must return 200');
+  assert.strictEqual(verifyRes.data.valid, true);
+  assert.strictEqual(verifyRes.data.user.email, 'rifat.onboard@riseuplabs.com');
+  assert.strictEqual(verifyRes.data.user.name, 'Rifat Chowdhury');
+
+  // 3. Employee Sets Password & Activates Account
+  // 3a. Reject short password (< 8 chars)
+  const shortPassRes = await apiRequest('/api/auth/activate', {
+    method: 'POST',
+    body: { token, password: 'short' },
+  });
+  assert.strictEqual(shortPassRes.status, 400, 'Short password must return 400');
+
+  // 3b. Successfully set custom secure password
+  const customPass = 'RiseupRifat@2026!';
+  const activateRes = await apiRequest('/api/auth/activate', {
+    method: 'POST',
+    body: { token, password: customPass },
+  });
+  assert.strictEqual(activateRes.status, 200, 'Account activation with valid password must return 200');
+  assert.strictEqual(activateRes.data.success, true);
+  assert.strictEqual(activateRes.data.user.accountStatus, 'Active');
+  assert.ok(activateRes.data.token, 'Must return authentication token');
+
+  // 4. Employee uses work email and the newly set password to log in directly
+  const loginRes = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: {
+      email: 'rifat.onboard@riseuplabs.com',
+      password: customPass,
+    },
+  });
+  assert.strictEqual(loginRes.status, 200, 'Login with email and newly configured password must succeed');
+  assert.strictEqual(loginRes.data.user.email, 'rifat.onboard@riseuplabs.com');
+  assert.ok(loginRes.data.token, 'Must return valid session token');
+
+  // 5. Subsequent visit to activation link flags account as already active
+  const secondVerify = await apiRequest(`/api/auth/verify-token?token=${encodeURIComponent(token)}`, {
+    method: 'GET',
+  });
+  assert.strictEqual(secondVerify.status, 200);
+  assert.strictEqual(secondVerify.data.alreadyActive, true, 'Subsequent verify must recognize already active account');
+});
+
 test('Teardown RLTSMS Test Server', async () => {
   await new Promise<void>((resolve) => {
     server.close(() => resolve());

@@ -172,54 +172,171 @@ authRouter.post('/magic-link/generate', (req: Request, res: Response) => {
   });
 });
 
-// Magic link verification & activation
-authRouter.post('/magic-link/activate', (req: Request, res: Response) => {
-  const { token, newPassword } = req.body;
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: 'Token and new password are required.' });
+// Verify activation token (invitation or magic link)
+authRouter.get('/verify-token', (req: Request, res: Response) => {
+  const token = (req.query.token as string || '').trim();
+  if (!token) {
+    return res.status(400).json({ valid: false, error: 'Activation token is required.' });
   }
 
+  const state = dbStore.getState();
   const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
   const entry = tokensMap.get(tokenHash);
 
-  if (!entry) {
-    return res.status(400).json({ error: 'Invalid or expired activation link.' });
+  // Search by tokensMap entry, exact invitationToken, or act_${userId}_ pattern
+  let targetUser = entry ? state.users.find((u) => u.id === entry.userId) : undefined;
+  if (!targetUser) {
+    targetUser = state.users.find((u) => u.invitationToken === token);
+  }
+  if (!targetUser && token.startsWith('act_')) {
+    const parts = token.split('_');
+    if (parts.length >= 2) {
+      const candidateId = parts[1];
+      targetUser = state.users.find((u) => u.id === candidateId || u.id === `usr-${candidateId}`);
+    }
   }
 
-  if (entry.isUsed) {
-    return res.status(400).json({ error: 'This activation token has already been consumed.' });
+  if (!targetUser) {
+    return res.status(404).json({ valid: false, error: 'Invalid or unknown invitation link.' });
   }
 
-  if (Date.now() > entry.expiresAt) {
+  if (targetUser.accountStatus === 'Active') {
+    return res.status(200).json({
+      valid: false,
+      alreadyActive: true,
+      error: 'This account has already been activated. Please sign in with your email and password.',
+      user: {
+        id: targetUser.id,
+        name: targetUser.name,
+        email: targetUser.email,
+        designation: targetUser.designation,
+        departmentName: targetUser.departmentName,
+      },
+    });
+  }
+
+  // Check 48h expiration window
+  if (entry && (entry.isUsed || Date.now() > entry.expiresAt)) {
+    return res.status(400).json({
+      valid: false,
+      error: entry.isUsed
+        ? 'This activation token has already been consumed.'
+        : 'Activation link has expired (48h window exceeded). Please request a new invitation.',
+    });
+  }
+
+  if (targetUser.invitationExpiresAt && new Date(targetUser.invitationExpiresAt).getTime() < Date.now()) {
+    return res.status(400).json({
+      valid: false,
+      error: 'Activation link has expired (48h window exceeded). Please request a new invitation.',
+    });
+  }
+
+  return res.json({
+    valid: true,
+    user: {
+      id: targetUser.id,
+      name: targetUser.name,
+      email: targetUser.email,
+      designation: targetUser.designation,
+      departmentName: targetUser.departmentName,
+      roles: targetUser.roles,
+    },
+  });
+});
+
+// Helper for activation logic used by both /activate and /magic-link/activate
+function handleAccountActivation(req: Request, res: Response) {
+  const { token, password, newPassword } = req.body;
+  const passToSet = password || newPassword;
+
+  if (!token || !passToSet) {
+    return res.status(400).json({ error: 'Token and new password are required.' });
+  }
+
+  if (typeof passToSet !== 'string' || passToSet.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+  }
+
+  const tokenStr = String(token).trim();
+  const tokenHash = crypto.createHash('sha256').update(tokenStr).digest('hex');
+  const entry = tokensMap.get(tokenHash);
+
+  const state = dbStore.getState();
+  let targetUser = entry ? state.users.find((u) => u.id === entry.userId) : undefined;
+  if (!targetUser) {
+    targetUser = state.users.find((u) => u.invitationToken === tokenStr);
+  }
+  if (!targetUser && tokenStr.startsWith('act_')) {
+    const parts = tokenStr.split('_');
+    if (parts.length >= 2) {
+      const candidateId = parts[1];
+      targetUser = state.users.find((u) => u.id === candidateId || u.id === `usr-${candidateId}`);
+    }
+  }
+
+  if (!targetUser) {
+    return res.status(400).json({ error: 'Invalid or unknown activation link.' });
+  }
+
+  if (entry) {
+    if (entry.isUsed) {
+      return res.status(400).json({ error: 'This activation token has already been consumed.' });
+    }
+    if (Date.now() > entry.expiresAt) {
+      return res.status(400).json({ error: 'Activation link has expired (48h window exceeded).' });
+    }
+    entry.isUsed = true;
+    tokensMap.set(tokenHash, entry);
+  }
+
+  if (targetUser.invitationExpiresAt && new Date(targetUser.invitationExpiresAt).getTime() < Date.now()) {
     return res.status(400).json({ error: 'Activation link has expired (48h window exceeded).' });
   }
 
-  // Mark token used
-  entry.isUsed = true;
-  tokensMap.set(tokenHash, entry);
-
-  const newHash = hashPassword(newPassword);
+  const newHash = hashPassword(passToSet);
+  const targetId = targetUser.id;
 
   dbStore.mutate((s) => {
-    const user = s.users.find((u) => u.id === entry.userId);
+    const user = s.users.find((u) => u.id === targetId);
     if (user) {
       user.accountStatus = 'Active';
       user.passwordHash = newHash;
+      user.invitationToken = undefined; // Invalidate single-use token
     }
 
     s.auditLogs.unshift({
       id: `aud-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      userId: entry.userId,
-      userName: user ? user.name : 'Unknown User',
+      userId: targetId,
+      userName: user ? user.name : 'Activated User',
       action: 'Account Activated',
       entity: 'Users',
-      entityId: entry.userId,
-      details: 'Account successfully activated via single-use magic link.',
+      entityId: targetId,
+      details: `Employee ${user ? user.name : targetId} (${user ? user.email : ''}) set account password and activated account.`,
     });
   });
 
-  return res.json({ success: true, message: 'Account successfully activated and password configured.' });
+  const updatedUser = dbStore.getState().users.find((u) => u.id === targetId);
+  const { passwordHash: _, ...safeUser } = updatedUser || targetUser;
+  const authToken = `rltsms_jwt_${targetId}_${Date.now()}`;
+
+  return res.json({
+    success: true,
+    message: 'Account successfully activated and password configured.',
+    user: safeUser,
+    token: authToken,
+  });
+}
+
+// POST /api/auth/activate - Unified employee activation & password configuration
+authRouter.post('/activate', (req: Request, res: Response) => {
+  return handleAccountActivation(req, res);
+});
+
+// Magic link verification & activation (alias)
+authRouter.post('/magic-link/activate', (req: Request, res: Response) => {
+  return handleAccountActivation(req, res);
 });
 
 // Request 6-digit OTP
