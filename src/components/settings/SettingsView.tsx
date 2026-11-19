@@ -17,12 +17,19 @@ import {
   AlertTriangle,
   History,
   Building,
+  KeyRound,
+  EyeOff,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { EmailTemplate, EmailDeliveryLog } from '../../types';
+import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 export const SettingsView: React.FC = () => {
   const {
+    currentUser,
+    changePassword,
     setCurrentView,
     resetToDefaults,
     emailTemplates,
@@ -31,10 +38,56 @@ export const SettingsView: React.FC = () => {
     sendTestEmail,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'rbac' | 'email'>('rbac');
+  const [activeTab, setActiveTab] = useState<'rbac' | 'email' | 'security'>('rbac');
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [fiscalYearStart, setFiscalYearStart] = useState('07'); // July (common for BD & international)
   const [currencyDefault, setCurrencyDefault] = useState('USD');
   const [resetNotice, setResetNotice] = useState(false);
+
+  // Inline password change state
+  const [inlineCurrentPass, setInlineCurrentPass] = useState('');
+  const [inlineNewPass, setInlineNewPass] = useState('');
+  const [inlineConfirmPass, setInlineConfirmPass] = useState('');
+  const [inlineShowCurrent, setInlineShowCurrent] = useState(false);
+  const [inlineShowNew, setInlineShowNew] = useState(false);
+  const [inlineShowConfirm, setInlineShowConfirm] = useState(false);
+  const [inlineLoading, setInlineLoading] = useState(false);
+  const [inlineMsg, setInlineMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  const handleInlineChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInlineMsg(null);
+
+    if (!inlineCurrentPass) {
+      setInlineMsg({ kind: 'error', text: 'Please enter your current password.' });
+      return;
+    }
+    if (inlineNewPass.length < 8) {
+      setInlineMsg({ kind: 'error', text: 'New password must be at least 8 characters long.' });
+      return;
+    }
+    if (inlineNewPass !== inlineConfirmPass) {
+      setInlineMsg({ kind: 'error', text: 'New password and confirmation do not match.' });
+      return;
+    }
+
+    setInlineLoading(true);
+    try {
+      const res = await changePassword(inlineCurrentPass, inlineNewPass);
+      if (res.success) {
+        setInlineMsg({ kind: 'success', text: res.message || 'Password updated successfully!' });
+        setInlineCurrentPass('');
+        setInlineNewPass('');
+        setInlineConfirmPass('');
+      } else {
+        setInlineMsg({ kind: 'error', text: res.error || 'Failed to update password.' });
+      }
+    } catch {
+      setInlineMsg({ kind: 'error', text: 'An unexpected error occurred while updating password.' });
+    } finally {
+      setInlineLoading(false);
+    }
+  };
 
   // Email template editor & preview modal state
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
@@ -260,6 +313,17 @@ export const SettingsView: React.FC = () => {
             <span className="px-1.5 py-0.2 bg-[#EA5400]/20 text-[#EA5400] text-[10px] rounded-full font-bold">
               8
             </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('security')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'security'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-2xs font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+            <span>Account &amp; Security</span>
           </button>
         </div>
       </div>
@@ -659,6 +723,236 @@ export const SettingsView: React.FC = () => {
         </div>
       )}
 
+      {/* TAB 3: ACCOUNT & SECURITY */}
+      {activeTab === 'security' && (
+        <div className="space-y-6">
+          {/* User Profile Card */}
+          <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#EA5400] text-white flex items-center justify-center font-bold text-xl uppercase shadow-md shadow-[#EA5400]/20 shrink-0">
+                  {currentUser.name.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {currentUser.name}
+                    </h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      {currentUser.accountStatus}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">{currentUser.email}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                    {currentUser.designation} &bull; {currentUser.departmentName || 'Engineering'} {currentUser.teamName ? `(${currentUser.teamName})` : ''}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 self-start sm:self-auto">
+                {currentUser.roles.map((role) => (
+                  <span
+                    key={role}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600"
+                  >
+                    <Shield className="w-3 h-3 text-[#EA5400]" />
+                    <span>{role}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Password Changing Card */}
+            <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Change Account Password
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Update your login password securely
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsChangePasswordOpen(true)}
+                  className="px-3 py-1.5 text-xs font-semibold text-[#EA5400] hover:text-white bg-[#EA5400]/10 hover:bg-[#EA5400] rounded-lg transition-colors cursor-pointer"
+                >
+                  Modal View
+                </button>
+              </div>
+
+              <form onSubmit={handleInlineChangePassword} className="space-y-3.5">
+                {inlineMsg && (
+                  <div
+                    className={`p-3 rounded-xl text-xs flex items-start gap-2 ${
+                      inlineMsg.kind === 'success'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                        : 'bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
+                    }`}
+                  >
+                    {inlineMsg.kind === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    )}
+                    <span>{inlineMsg.text}</span>
+                  </div>
+                )}
+
+                {/* Current Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={inlineShowCurrent ? 'text' : 'password'}
+                      value={inlineCurrentPass}
+                      onChange={(e) => setInlineCurrentPass(e.target.value)}
+                      placeholder="Enter current password"
+                      className="w-full pl-8 pr-9 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#EA5400] outline-hidden"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setInlineShowCurrent(!inlineShowCurrent)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {inlineShowCurrent ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    New Password (Min. 8 characters)
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={inlineShowNew ? 'text' : 'password'}
+                      value={inlineNewPass}
+                      onChange={(e) => setInlineNewPass(e.target.value)}
+                      placeholder="Enter at least 8 characters"
+                      className="w-full pl-8 pr-9 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#EA5400] outline-hidden"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setInlineShowNew(!inlineShowNew)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {inlineShowNew ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type={inlineShowConfirm ? 'text' : 'password'}
+                      value={inlineConfirmPass}
+                      onChange={(e) => setInlineConfirmPass(e.target.value)}
+                      placeholder="Re-enter new password"
+                      className="w-full pl-8 pr-9 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-[#EA5400] outline-hidden"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setInlineShowConfirm(!inlineShowConfirm)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {inlineShowConfirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end">
+                  <button
+                    type="submit"
+                    disabled={inlineLoading || !inlineCurrentPass || inlineNewPass.length < 8 || inlineNewPass !== inlineConfirmPass}
+                    className="px-4 py-2 text-xs font-bold text-white bg-[#EA5400] hover:bg-[#d04b00] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    {inlineLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <span>Update Password</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Enterprise Security Policies Card */}
+            <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-slate-700">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Security Architecture & Policies
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Enterprise Zero-Trust compliance standards
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Argon2id & scrypt Password Hashing</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    All passwords are cryptographically salted and hashed before persistence. Plaintext passwords are never logged, stored, or transmitted.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>48-Hour Invitation Token Lifecycle</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Invited employees receive a cryptographically secure 48-hour magic activation token. Unused invitations auto-expire and can be resent by admins.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Zero-Credential Sharing Policy</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    RLTSMS shares access via centralized seat delegation, never distributing raw tool master passwords or shared credentials via email.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TEMPLATE PREVIEW & EDITOR MODAL */}
       {selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150">
@@ -838,6 +1132,11 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </div>
   );
 };

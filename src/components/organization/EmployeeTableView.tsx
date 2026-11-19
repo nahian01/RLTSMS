@@ -15,7 +15,12 @@ import {
   Users,
   Check,
   AlertTriangle,
+  Trash2,
+  Send,
+  Loader2,
+  KeyRound,
 } from 'lucide-react';
+import { ResetEmployeePasswordModal } from '../common/ResetEmployeePasswordModal';
 
 interface Toast {
   id: number;
@@ -27,11 +32,14 @@ let toastSeq = 0;
 
 export const EmployeeTableView: React.FC = () => {
   const {
+    currentUser,
     users,
     departments,
     teams,
     roles,
     updateEmployee,
+    deleteEmployee,
+    resendInvitation,
     updateUserRoles,
     toggleUserStatus,
   } = useApp();
@@ -50,7 +58,10 @@ export const EmployeeTableView: React.FC = () => {
   // Modals state
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deactivatingUser, setDeactivatingUser] = useState<User | null>(null);
+  const [removingUser, setRemovingUser] = useState<User | null>(null);
+  const [passwordResetUser, setPasswordResetUser] = useState<User | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   // Edit form state
   const [editName, setEditName] = useState('');
@@ -75,6 +86,33 @@ export const EmployeeTableView: React.FC = () => {
 
   const removeToast = (id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleResendInvitation = (emp: User) => {
+    try {
+      resendInvitation(emp.id);
+      addToast(`Activation invitation resent to ${emp.email} via SMTP.`, 'success');
+    } catch {
+      addToast('Failed to resend invitation. Please try again.', 'error');
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!removingUser) return;
+    setIsRemoving(true);
+    try {
+      const res = await deleteEmployee(removingUser.id);
+      if (res.success) {
+        addToast(res.message || `${removingUser.name} was removed from the organization.`, 'success');
+        setRemovingUser(null);
+      } else {
+        addToast(res.message || res.error || 'Failed to remove employee.', 'error');
+      }
+    } catch {
+      addToast('An unexpected error occurred while removing employee.', 'error');
+    } finally {
+      setIsRemoving(false);
+    }
   };
 
   // Filter teams based on selected department filter
@@ -570,6 +608,19 @@ export const EmployeeTableView: React.FC = () => {
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
                         <div className="inline-flex items-center gap-1">
+                          {/* Resend Invitation for Pending or Expired accounts */}
+                          {(emp.accountStatus === 'Pending Invitation' || emp.accountStatus === 'Expired Invitation') && (
+                            <button
+                              type="button"
+                              onClick={() => handleResendInvitation(emp)}
+                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
+                              title="Resend Activation Email via SMTP"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {/* Edit Employee */}
                           <button
                             type="button"
                             onClick={() => openEditModal(emp)}
@@ -578,6 +629,18 @@ export const EmployeeTableView: React.FC = () => {
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Change / Reset Password */}
+                          <button
+                            type="button"
+                            onClick={() => setPasswordResetUser(emp)}
+                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded transition-colors cursor-pointer"
+                            title="Change Employee Password"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Toggle Status */}
                           <button
                             type="button"
                             onClick={() => handleStatusClick(emp)}
@@ -594,6 +657,18 @@ export const EmployeeTableView: React.FC = () => {
                               <UserCheck className="w-3.5 h-3.5" />
                             )}
                           </button>
+
+                          {/* Remove Employee */}
+                          {emp.id !== 'usr-admin' && emp.id !== currentUser?.id && (
+                            <button
+                              type="button"
+                              onClick={() => setRemovingUser(emp)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors cursor-pointer"
+                              title="Remove Employee"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -835,22 +910,37 @@ export const EmployeeTableView: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2 bg-slate-50 dark:bg-slate-800/30">
+            <div className="px-6 py-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-800/30">
               <button
                 type="button"
-                onClick={closeEditModal}
-                className="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium cursor-pointer"
+                onClick={() => {
+                  const target = editingUser;
+                  closeEditModal();
+                  setPasswordResetUser(target);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-lg cursor-pointer transition-colors"
+                title="Change Employee Password"
               >
-                Cancel
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Change Password</span>
               </button>
-              <button
-                type="button"
-                onClick={handleSaveEmployee}
-                disabled={isSaving}
-                className="px-4 py-1.5 rounded-lg bg-[#EA5400] text-white hover:bg-orange-700 font-medium disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEmployee}
+                  disabled={isSaving}
+                  className="px-4 py-1.5 rounded-lg bg-[#EA5400] text-white hover:bg-orange-700 font-medium disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -891,6 +981,77 @@ export const EmployeeTableView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Remove Confirm Dialog */}
+      {removingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2 rounded-full bg-rose-100 dark:bg-rose-950/60">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Remove Employee from Organization?
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Permanent removal &bull; Access revocation
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to remove <span className="font-semibold text-slate-900 dark:text-slate-100">{removingUser.name}</span> ({removingUser.email})?
+            </p>
+
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px] space-y-1.5 text-slate-600 dark:text-slate-300">
+              <div><strong className="text-slate-700 dark:text-slate-200">Department:</strong> {removingUser.departmentName || 'General'}</div>
+              <div><strong className="text-slate-700 dark:text-slate-200">Designation:</strong> {removingUser.designation}</div>
+              <div><strong className="text-slate-700 dark:text-slate-200">Assigned Roles:</strong> {removingUser.roles.join(', ')}</div>
+            </div>
+
+            <p className="text-[11px] text-rose-600 dark:text-rose-400 leading-relaxed">
+              <strong>Warning:</strong> All assigned licenses, access delegations, and permissions will be automatically revoked. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRemovingUser(null)}
+                disabled={isRemoving}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemove}
+                disabled={isRemoving}
+                className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
+              >
+                {isRemoving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Remove Employee</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Reset Employee Password Modal */}
+      <ResetEmployeePasswordModal
+        isOpen={Boolean(passwordResetUser)}
+        onClose={() => setPasswordResetUser(null)}
+        user={passwordResetUser}
+        onSuccess={(msg) => addToast(msg, 'success')}
+      />
     </div>
   );
 };

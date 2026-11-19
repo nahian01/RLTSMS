@@ -661,6 +661,94 @@ test('Department & Team Management: Full CRUD and automatic unassignment cascade
   assert.strictEqual(admin?.departmentName, 'Unassigned');
 });
 
+test('Employee Management: Resend Invitation, Change Password, and Remove Employee', async () => {
+  // 1. Add employee for lifecycle testing
+  const addRes = await apiRequest('/api/org/users', {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: {
+      name: 'Tanvir Hossain',
+      email: 'tanvir.test@riseuplabs.com',
+      phone: '+880 1812-345678',
+      designation: 'Backend Architect',
+      departmentId: 'dept-eng',
+      roles: ['Employee'],
+    },
+  });
+  assert.strictEqual(addRes.status, 201, 'Adding test employee should return 201');
+  const empId = addRes.data.id;
+  assert.strictEqual(addRes.data.accountStatus, 'Pending Invitation');
+
+  // 2. Resend invitation endpoint
+  const resendRes = await apiRequest(`/api/org/users/${empId}/resend`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(resendRes.status, 200, 'Resending invitation should return 200');
+  assert.strictEqual(resendRes.data.success, true);
+
+  // 3. Admin Change Employee Password
+  // 3a. Reject short password (< 8 chars)
+  const shortPassRes = await apiRequest(`/api/org/users/${empId}/change-password`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: { newPassword: 'short' },
+  });
+  assert.strictEqual(shortPassRes.status, 400, 'Short password must be rejected');
+
+  // 3b. Accept valid new password
+  const newPass = 'SecurePass2026!';
+  const changePassRes = await apiRequest(`/api/org/users/${empId}/change-password`, {
+    method: 'POST',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: { newPassword: newPass },
+  });
+  assert.strictEqual(changePassRes.status, 200, 'Admin changing employee password must succeed');
+  assert.strictEqual(changePassRes.data.success, true);
+
+  // Activate user to test login with new password
+  await apiRequest(`/api/org/users/${empId}/status`, {
+    method: 'PATCH',
+    headers: { 'x-user-id': 'usr-admin' },
+    body: { status: 'Active' },
+  });
+
+  // Verify login with newly set password works
+  const loginRes = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: { email: 'tanvir.test@riseuplabs.com', password: newPass },
+  });
+  assert.strictEqual(loginRes.status, 200, 'Login with newly configured password must succeed');
+  assert.strictEqual(loginRes.data.user.email, 'tanvir.test@riseuplabs.com');
+
+  // 4. Remove Employee
+  // 4a. Reject deleting primary admin usr-admin
+  const delAdminRes = await apiRequest('/api/org/users/usr-admin', {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(delAdminRes.status, 403, 'Deleting usr-admin must return 403 Forbidden');
+
+  // 4b. Reject deleting self
+  const delSelfRes = await apiRequest(`/api/org/users/${empId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': empId },
+  });
+  assert.strictEqual(delSelfRes.status, 400, 'Deleting own account must return 400');
+
+  // 4c. Successfully remove employee by admin
+  const delEmpRes = await apiRequest(`/api/org/users/${empId}`, {
+    method: 'DELETE',
+    headers: { 'x-user-id': 'usr-admin' },
+  });
+  assert.strictEqual(delEmpRes.status, 200, 'Removing employee by admin must succeed');
+  assert.strictEqual(delEmpRes.data.success, true);
+
+  // Verify user is gone from store
+  const targetInStore = dbStore.getState().users.find((u) => u.id === empId);
+  assert.strictEqual(targetInStore, undefined, 'Employee must be removed from store');
+});
+
 test('Teardown RLTSMS Test Server', async () => {
   await new Promise<void>((resolve) => {
     server.close(() => resolve());

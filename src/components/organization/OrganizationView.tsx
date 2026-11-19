@@ -24,12 +24,27 @@ import {
   CreditCard,
   Briefcase,
   UserPlus,
+  Trash2,
+  KeyRound,
+  Send,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { User, UserRole } from '../../types';
+import { ResetEmployeePasswordModal } from '../common/ResetEmployeePasswordModal';
+
+interface OrgToast {
+  id: number;
+  message: string;
+  kind: 'success' | 'error';
+}
+
+let orgToastSeq = 0;
 
 export const OrganizationView: React.FC = () => {
   const {
+    currentUser,
     departments,
     teams,
     users,
@@ -37,6 +52,7 @@ export const OrganizationView: React.FC = () => {
     resendInvitation,
     simulateActivateAccount,
     toggleUserStatus,
+    deleteEmployee,
     createDepartment,
     createTeam,
   } = useApp();
@@ -60,6 +76,53 @@ export const OrganizationView: React.FC = () => {
   const [isDeptModalOpen, setIsDeptModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Removing & Password resetting
+  const [removingUser, setRemovingUser] = useState<User | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [passwordResetUser, setPasswordResetUser] = useState<User | null>(null);
+
+  // Toasts
+  const [toasts, setToasts] = useState<OrgToast[]>([]);
+
+  const addToast = (message: string, kind: 'success' | 'error' = 'success') => {
+    const id = ++orgToastSeq;
+    setToasts((prev) => [...prev, { id, message, kind }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleResend = (user: User) => {
+    try {
+      resendInvitation(user.id);
+      addToast(`Activation invitation resent to ${user.email} via SMTP.`, 'success');
+    } catch {
+      addToast('Failed to resend invitation. Please try again.', 'error');
+    }
+  };
+
+  const handleConfirmRemove = async () => {
+    if (!removingUser) return;
+    setIsRemoving(true);
+    try {
+      const res = await deleteEmployee(removingUser.id);
+      if (res.success) {
+        addToast(res.message || `${removingUser.name} was removed from the organization.`, 'success');
+        setRemovingUser(null);
+      } else {
+        addToast(res.message || res.error || 'Failed to remove employee.', 'error');
+      }
+    } catch {
+      addToast('An unexpected error occurred while removing employee.', 'error');
+    } finally {
+      setIsRemoving(false);
+    }
+  };
 
   // Invite Form State
   const [name, setName] = useState('');
@@ -249,6 +312,31 @@ export const OrganizationView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
+      {/* Toast Notifications */}
+      {toasts.length > 0 && (
+        <div className="fixed top-20 right-6 z-50 flex flex-col gap-2 max-w-sm">
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className={`flex items-center justify-between p-3 rounded-lg shadow-lg text-xs font-medium border ${
+                t.kind === 'success'
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800'
+                  : 'bg-rose-50 text-rose-900 border-rose-200 dark:bg-rose-950 dark:text-rose-200 dark:border-rose-800'
+              }`}
+            >
+              <span>{t.message}</span>
+              <button
+                type="button"
+                onClick={() => removeToast(t.id)}
+                className="ml-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-1 border-b border-slate-200 dark:border-slate-800">
         <div>
@@ -625,19 +713,50 @@ export const OrganizationView: React.FC = () => {
                                         </div>
                                       </div>
 
-                                      {/* Card Footer with Quick Toggle */}
+                                      {/* Card Footer with Quick Actions */}
                                       <div className="pt-2 border-t border-slate-200/60 dark:border-slate-750 flex items-center justify-between text-[11px]">
                                         <span className="text-slate-400 font-mono text-[10px]">{member.phone}</span>
-                                        <button
-                                          onClick={() => toggleUserStatus(member.id)}
-                                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
-                                            member.accountStatus === 'Active'
-                                              ? 'text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950'
-                                              : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950'
-                                          }`}
-                                        >
-                                          {member.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
-                                        </button>
+                                        <div className="inline-flex items-center gap-1">
+                                          {(member.accountStatus === 'Pending Invitation' || member.accountStatus === 'Expired Invitation') && (
+                                            <button
+                                              type="button"
+                                              onClick={() => handleResend(member)}
+                                              className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
+                                              title="Resend Activation Email"
+                                            >
+                                              <Send className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                          <button
+                                            type="button"
+                                            onClick={() => setPasswordResetUser(member)}
+                                            className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors cursor-pointer"
+                                            title="Change Employee Password"
+                                          >
+                                            <KeyRound className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => toggleUserStatus(member.id)}
+                                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
+                                              member.accountStatus === 'Active'
+                                                ? 'text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950'
+                                                : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950'
+                                            }`}
+                                          >
+                                            {member.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
+                                          </button>
+                                          {member.id !== 'usr-admin' && member.id !== currentUser?.id && (
+                                            <button
+                                              type="button"
+                                              onClick={() => setRemovingUser(member)}
+                                              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
+                                              title="Remove Employee"
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   ))}
@@ -711,12 +830,47 @@ export const OrganizationView: React.FC = () => {
 
                                     <div className="pt-2 border-t border-slate-200/60 dark:border-slate-750 flex items-center justify-between text-[11px]">
                                       <span className="text-slate-400 font-mono text-[10px]">{member.phone}</span>
-                                      <button
-                                        onClick={() => toggleUserStatus(member.id)}
-                                        className="text-[10px] font-semibold text-slate-500 hover:text-rose-600 cursor-pointer"
-                                      >
-                                        {member.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
-                                      </button>
+                                      <div className="inline-flex items-center gap-1">
+                                        {(member.accountStatus === 'Pending Invitation' || member.accountStatus === 'Expired Invitation') && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleResend(member)}
+                                            className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
+                                            title="Resend Activation Email"
+                                          >
+                                            <Send className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => setPasswordResetUser(member)}
+                                          className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors cursor-pointer"
+                                          title="Change Employee Password"
+                                        >
+                                          <KeyRound className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleUserStatus(member.id)}
+                                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-md cursor-pointer transition-colors ${
+                                            member.accountStatus === 'Active'
+                                              ? 'text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950'
+                                              : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950'
+                                          }`}
+                                        >
+                                          {member.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                        {member.id !== 'usr-admin' && member.id !== currentUser?.id && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setRemovingUser(member)}
+                                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
+                                            title="Remove Employee"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -835,16 +989,47 @@ export const OrganizationView: React.FC = () => {
                           </td>
 
                           <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => toggleUserStatus(u.id)}
-                              className={`text-[11px] font-medium px-2 py-1 rounded-md transition-colors cursor-pointer ${
-                                u.accountStatus === 'Active'
-                                  ? 'text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950'
-                                  : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950'
-                              }`}
-                            >
-                              {u.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
-                            </button>
+                            <div className="inline-flex items-center gap-1 justify-end">
+                              {(u.accountStatus === 'Pending Invitation' || u.accountStatus === 'Expired Invitation') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResend(u)}
+                                  className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
+                                  title="Resend Activation Email"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setPasswordResetUser(u)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors cursor-pointer"
+                                title="Change Employee Password"
+                              >
+                                <KeyRound className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleUserStatus(u.id)}
+                                className={`text-[11px] font-medium px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                                  u.accountStatus === 'Active'
+                                    ? 'text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950'
+                                    : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950'
+                                }`}
+                              >
+                                {u.accountStatus === 'Active' ? 'Deactivate' : 'Activate'}
+                              </button>
+                              {u.id !== 'usr-admin' && u.id !== currentUser?.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => setRemovingUser(u)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
+                                  title="Remove Employee"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -957,18 +1142,37 @@ export const OrganizationView: React.FC = () => {
                               <span>{isCopied ? 'Copied' : 'Copy Link'}</span>
                             </button>
                             <button
-                              onClick={() => resendInvitation(u.id)}
+                              onClick={() => handleResend(u)}
                               className="px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-md cursor-pointer"
-                              title="Reset 48-hour expiration timer"
+                              title="Reset 48-hour expiration timer and dispatch email via SMTP"
                             >
                               Resend Token
                             </button>
                             <button
-                              onClick={() => simulateActivateAccount(u.id)}
+                              onClick={() => setPasswordResetUser(u)}
+                              className="px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-md cursor-pointer inline-flex items-center gap-1"
+                              title="Set or reset account password for employee"
+                            >
+                              <KeyRound className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                              <span>Set Password</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                simulateActivateAccount(u.id);
+                                addToast(`Account for ${u.name} activated successfully.`, 'success');
+                              }}
                               className="px-2.5 py-1 text-[11px] font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-md cursor-pointer"
                               title="Instantly activate account without waiting for email link"
                             >
                               Simulate Activate
+                            </button>
+                            <button
+                              onClick={() => setRemovingUser(u)}
+                              className="px-2.5 py-1 text-[11px] font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-md cursor-pointer inline-flex items-center gap-1"
+                              title="Revoke invitation and remove user"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
                             </button>
                           </td>
                         </tr>
@@ -1425,6 +1629,77 @@ export const OrganizationView: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Remove Employee Confirmation Modal */}
+      {removingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-2 rounded-full bg-rose-100 dark:bg-rose-950/60">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Remove Employee from Organization?
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Permanent removal &bull; Access revocation
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to remove <span className="font-semibold text-slate-900 dark:text-slate-100">{removingUser.name}</span> ({removingUser.email})?
+            </p>
+
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px] space-y-1.5 text-slate-600 dark:text-slate-300">
+              <div><strong className="text-slate-700 dark:text-slate-200">Department:</strong> {removingUser.departmentName || 'General'}</div>
+              <div><strong className="text-slate-700 dark:text-slate-200">Designation:</strong> {removingUser.designation}</div>
+              <div><strong className="text-slate-700 dark:text-slate-200">Assigned Roles:</strong> {removingUser.roles.join(', ')}</div>
+            </div>
+
+            <p className="text-[11px] text-rose-600 dark:text-rose-400 leading-relaxed">
+              <strong>Warning:</strong> All assigned licenses, access delegations, and permissions will be automatically revoked. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setRemovingUser(null)}
+                disabled={isRemoving}
+                className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRemove}
+                disabled={isRemoving}
+                className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-sm"
+              >
+                {isRemoving ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Removing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Remove Employee</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Employee Password Modal */}
+      <ResetEmployeePasswordModal
+        isOpen={Boolean(passwordResetUser)}
+        onClose={() => setPasswordResetUser(null)}
+        user={passwordResetUser}
+        onSuccess={(msg) => addToast(msg, 'success')}
+      />
     </div>
   );
 };

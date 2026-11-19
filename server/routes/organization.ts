@@ -170,6 +170,112 @@ orgRouter.post('/users/:id/resend', async (req: Request, res: Response) => {
   });
 });
 
+// DELETE /api/org/users/:id - Remove employee
+orgRouter.delete('/users/:id', (req: Request, res: Response) => {
+  const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
+  const { id } = req.params;
+
+  if (id === 'usr-admin') {
+    return res.status(403).json({ error: 'The primary system administrator account cannot be deleted.' });
+  }
+
+  if (id === currentUserId) {
+    return res.status(400).json({ error: 'You cannot delete your own active account.' });
+  }
+
+  const state = dbStore.getState();
+  const targetUser = state.users.find((u) => u.id === id);
+  if (!targetUser) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+
+  dbStore.mutate((s) => {
+    // Remove user
+    s.users = s.users.filter((u) => u.id !== id);
+
+    // Unassign lead roles if any
+    s.departments.forEach((dept) => {
+      if (dept.leadId === id) {
+        dept.leadId = undefined;
+        dept.leadName = undefined;
+      }
+    });
+
+    s.teams.forEach((t) => {
+      if (t.leadId === id) {
+        t.leadId = undefined;
+        t.leadName = undefined;
+      }
+    });
+
+    // Revoke any card visibility permissions
+    s.cardPermissions = s.cardPermissions.filter(
+      (cp) => cp.authorizedUserId !== id && cp.ownerId !== id
+    );
+
+    s.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: currentUserId,
+      userName: currentUser ? currentUser.name : 'System Admin',
+      action: 'Delete Employee Account',
+      entity: 'Organization',
+      entityId: id,
+      details: `Removed employee account for ${targetUser.name} (${targetUser.email}). Revoked associated assignments.`,
+    });
+  });
+
+  return res.json({
+    success: true,
+    message: `Employee ${targetUser.name} was successfully removed from the organization.`,
+  });
+});
+
+// POST /api/org/users/:id/change-password - Change / Reset employee password (by Administrator)
+orgRouter.post('/users/:id/change-password', (req: Request, res: Response) => {
+  const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+  }
+
+  const state = dbStore.getState();
+  const targetUser = state.users.find((u) => u.id === id);
+  if (!targetUser) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const newHash = hashPassword(newPassword);
+
+  dbStore.mutate((s) => {
+    const u = s.users.find((x) => x.id === id);
+    if (u) {
+      u.passwordHash = newHash;
+    }
+
+    s.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: currentUserId,
+      userName: currentUser ? currentUser.name : 'System Admin',
+      action: 'Reset Employee Password',
+      entity: 'Organization',
+      entityId: id,
+      details: `Administrator changed/reset account password for employee ${targetUser.name} (${targetUser.email}).`,
+    });
+  });
+
+  return res.json({
+    success: true,
+    message: `Password for ${targetUser.name} updated successfully.`,
+  });
+});
+
 // PATCH /api/org/users/:id/status - Activate or deactivate employee account (Part 2.2)
 orgRouter.patch('/users/:id/status', (req: Request, res: Response) => {
   const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';

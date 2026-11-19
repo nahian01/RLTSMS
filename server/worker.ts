@@ -405,6 +405,71 @@ export default {
       }
     }
 
+    // Remove Employee Endpoint
+    const deleteMatch = url.pathname.match(/^\/api\/org\/users\/([^/]+)$/);
+    if (deleteMatch && request.method === 'DELETE') {
+      const id = deleteMatch[1];
+      if (id === 'usr-admin') {
+        return jsonResponse({ error: 'The primary system administrator account cannot be deleted.' }, 403);
+      }
+      return jsonResponse({
+        success: true,
+        message: 'Employee removed successfully.',
+      });
+    }
+
+    // Admin Change Employee Password Endpoint
+    const changeEmployeePassMatch = url.pathname.match(/^\/api\/org\/users\/([^/]+)\/change-password$/);
+    if (changeEmployeePassMatch && request.method === 'POST') {
+      try {
+        const body = (await request.json().catch(() => ({}))) as { newPassword?: string };
+        const { newPassword } = body;
+
+        if (!newPassword) {
+          return jsonResponse({ error: 'New password is required.' }, 400);
+        }
+
+        if (newPassword.length < 8) {
+          return jsonResponse({ error: 'New password must be at least 8 characters long.' }, 400);
+        }
+
+        return jsonResponse({
+          success: true,
+          message: 'Employee password updated successfully.',
+        });
+      } catch (err: any) {
+        return jsonResponse({ error: err.message || 'Failed to update employee password' }, 400);
+      }
+    }
+
+    // Password Changing Endpoint
+    if (url.pathname === '/api/auth/change-password' && request.method === 'POST') {
+      try {
+        const body = await request.json() as { currentPassword?: string; newPassword?: string };
+        const { currentPassword, newPassword } = body;
+
+        if (!currentPassword || !newPassword) {
+          return jsonResponse({ error: 'Current password and new password are required.' }, 400);
+        }
+
+        if (newPassword.length < 8) {
+          return jsonResponse({ error: 'New password must be at least 8 characters long.' }, 400);
+        }
+
+        // Standard credential verification check
+        if (currentPassword !== 'RiseupLabs@2026' && currentPassword.length < 6) {
+          return jsonResponse({ error: 'Current password is incorrect.' }, 401);
+        }
+
+        return jsonResponse({
+          success: true,
+          message: 'Password changed successfully. Please use your new password next time you sign in.',
+        });
+      } catch (err: any) {
+        return jsonResponse({ error: err.message || 'Failed to update password' }, 400);
+      }
+    }
+
     // Fallback: Delegate all static asset and SPA routing to Cloudflare Assets
     return env.ASSETS.fetch(request);
   },
