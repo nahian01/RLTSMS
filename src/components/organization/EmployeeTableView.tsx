@@ -19,6 +19,8 @@ import {
   Send,
   Loader2,
   KeyRound,
+  UserPlus,
+  Plus,
 } from 'lucide-react';
 import { ResetEmployeePasswordModal } from '../common/ResetEmployeePasswordModal';
 
@@ -42,7 +44,11 @@ export const EmployeeTableView: React.FC = () => {
     resendInvitation,
     updateUserRoles,
     toggleUserStatus,
+    inviteEmployee,
+    hasPermission,
   } = useApp();
+
+  const canManageOrg = hasPermission('org:manage');
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +78,60 @@ export const EmployeeTableView: React.FC = () => {
   const [editReportingLeadId, setEditReportingLeadId] = useState('');
   const [editRoles, setEditRoles] = useState<UserRole[]>([]);
   const [editError, setEditError] = useState('');
+
+  // Invite employee modal state
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [inviteDesignation, setInviteDesignation] = useState('');
+  const [inviteDepartmentId, setInviteDepartmentId] = useState('');
+  const [inviteTeamId, setInviteTeamId] = useState('');
+  const [inviteReportingLeadId, setInviteReportingLeadId] = useState('');
+  const [inviteRoles, setInviteRoles] = useState<UserRole[]>(['Employee']);
+
+  const availableRoles: UserRole[] = [
+    'Employee',
+    'Team Lead',
+    'Department Lead',
+    'Operation Manager',
+    'Purchaser',
+    'Finance',
+    'Management',
+    'Card Information Viewer',
+    'System Admin',
+  ];
+
+  const handleInviteRoleToggle = (role: UserRole) => {
+    setInviteRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    );
+  };
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteName.trim() || !inviteEmail.trim()) return;
+
+    inviteEmployee({
+      name: inviteName.trim(),
+      email: inviteEmail.trim().toLowerCase(),
+      phone: invitePhone.trim() || '+880 1710-000000',
+      designation: inviteDesignation.trim() || 'Software Engineer',
+      departmentId: inviteDepartmentId || departments[0]?.id || '',
+      teamId: inviteTeamId || undefined,
+      reportingLeadId: inviteReportingLeadId || undefined,
+      roles: inviteRoles.length > 0 ? inviteRoles : ['Employee'],
+    });
+
+    addToast(`Activation invitation sent to ${inviteEmail.trim().toLowerCase()}`);
+    setIsInviteModalOpen(false);
+    setInviteName('');
+    setInviteEmail('');
+    setInvitePhone('');
+    setInviteDesignation('');
+    setInviteReportingLeadId('');
+    setInviteRoles(['Employee']);
+  };
 
   // Toasts
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -399,6 +459,20 @@ export const EmployeeTableView: React.FC = () => {
             All team members across departments and teams with roles and assignments
           </p>
         </div>
+
+        {canManageOrg && (
+          <button
+            type="button"
+            onClick={() => {
+              setInviteDepartmentId(departments[0]?.id || '');
+              setIsInviteModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#d04b00] rounded-lg shadow-xs transition-colors cursor-pointer self-start sm:self-auto"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Add Employee</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Toolbar */}
@@ -607,69 +681,73 @@ export const EmployeeTableView: React.FC = () => {
 
                       {/* Actions */}
                       <td className="py-3 px-4 text-right">
-                        <div className="inline-flex items-center gap-1">
-                          {/* Resend Invitation for Pending or Expired accounts */}
-                          {(emp.accountStatus === 'Pending Invitation' || emp.accountStatus === 'Expired Invitation') && (
-                            <button
-                              type="button"
-                              onClick={() => handleResendInvitation(emp)}
-                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
-                              title="Resend Activation Email via SMTP"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
-                          {/* Edit Employee */}
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(emp)}
-                            className="p-1.5 text-slate-500 hover:text-[#EA5400] hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                            title="Edit Employee"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Change / Reset Password */}
-                          <button
-                            type="button"
-                            onClick={() => setPasswordResetUser(emp)}
-                            className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded transition-colors cursor-pointer"
-                            title="Change Employee Password"
-                          >
-                            <KeyRound className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Toggle Status */}
-                          <button
-                            type="button"
-                            onClick={() => handleStatusClick(emp)}
-                            className={`p-1.5 rounded transition-colors cursor-pointer ${
-                              emp.accountStatus === 'Active'
-                                ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30'
-                                : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-                            }`}
-                            title={emp.accountStatus === 'Active' ? 'Deactivate Account' : 'Activate Account'}
-                          >
-                            {emp.accountStatus === 'Active' ? (
-                              <UserX className="w-3.5 h-3.5" />
-                            ) : (
-                              <UserCheck className="w-3.5 h-3.5" />
+                        {canManageOrg ? (
+                          <div className="inline-flex items-center gap-1">
+                            {/* Resend Invitation for Pending or Expired accounts */}
+                            {(emp.accountStatus === 'Pending Invitation' || emp.accountStatus === 'Expired Invitation') && (
+                              <button
+                                type="button"
+                                onClick={() => handleResendInvitation(emp)}
+                                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors cursor-pointer"
+                                title="Resend Activation Email via SMTP"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                              </button>
                             )}
-                          </button>
 
-                          {/* Remove Employee */}
-                          {emp.id !== 'usr-admin' && emp.id !== currentUser?.id && (
+                            {/* Edit Employee */}
                             <button
                               type="button"
-                              onClick={() => setRemovingUser(emp)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors cursor-pointer"
-                              title="Remove Employee"
+                              onClick={() => openEditModal(emp)}
+                              className="p-1.5 text-slate-500 hover:text-[#EA5400] hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                              title="Edit Employee"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                        </div>
+
+                            {/* Change / Reset Password */}
+                            <button
+                              type="button"
+                              onClick={() => setPasswordResetUser(emp)}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded transition-colors cursor-pointer"
+                              title="Change Employee Password"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Toggle Status */}
+                            <button
+                              type="button"
+                              onClick={() => handleStatusClick(emp)}
+                              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                                emp.accountStatus === 'Active'
+                                  ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                  : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                              }`}
+                              title={emp.accountStatus === 'Active' ? 'Deactivate Account' : 'Activate Account'}
+                            >
+                              {emp.accountStatus === 'Active' ? (
+                                <UserX className="w-3.5 h-3.5" />
+                              ) : (
+                                <UserCheck className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+
+                            {/* Remove Employee */}
+                            {emp.id !== 'usr-admin' && emp.id !== currentUser?.id && (
+                              <button
+                                type="button"
+                                onClick={() => setRemovingUser(emp)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors cursor-pointer"
+                                title="Remove Employee"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">View only</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -1045,6 +1123,189 @@ export const EmployeeTableView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Invite Employee Modal */}
+      {isInviteModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setIsInviteModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#EA5400]/10 flex items-center justify-center text-[#EA5400]">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Add Employee to Organization
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsInviteModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleInviteSubmit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Mahfuzur Rahman"
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Riseup Labs Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="user@riseuplabs.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Designation *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Senior Mobile Engineer"
+                    value={inviteDesignation}
+                    onChange={(e) => setInviteDesignation(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Phone Number</label>
+                  <input
+                    type="text"
+                    placeholder="+880 1710-000000"
+                    value={invitePhone}
+                    onChange={(e) => setInvitePhone(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Department *</label>
+                  <select
+                    value={inviteDepartmentId}
+                    onChange={(e) => {
+                      setInviteDepartmentId(e.target.value);
+                      setInviteTeamId('');
+                    }}
+                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                  >
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Team Assignment</label>
+                  <select
+                    value={inviteTeamId}
+                    onChange={(e) => setInviteTeamId(e.target.value)}
+                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                  >
+                    <option value="">General Department Pool (No Team)</option>
+                    {teams
+                      .filter((t) => t.departmentId === (inviteDepartmentId || departments[0]?.id))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Reporting Lead Selection */}
+              <div>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Reporting Lead / Team Lead (Optional)</label>
+                <select
+                  value={inviteReportingLeadId}
+                  onChange={(e) => setInviteReportingLeadId(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                >
+                  <option value="">-- Direct to Department Lead / Unassigned --</option>
+                  {users
+                    .filter((u) => u.accountStatus === 'Active')
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.designation} • {u.departmentName})
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Role Selection */}
+              <div>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Assigned Roles & Permissions *</label>
+                <div className="flex flex-wrap gap-1.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700">
+                  {availableRoles.map((role) => {
+                    const isSelected = inviteRoles.includes(role);
+                    return (
+                      <button
+                        type="button"
+                        key={role}
+                        onClick={() => handleInviteRoleToggle(role)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#EA5400] text-white font-semibold'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-400'
+                        }`}
+                      >
+                        {role}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/40 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                <strong>48-Hour Activation Link:</strong> An invitation email will be dispatched. When the employee clicks the link, they will be directed to activate their account and set their password.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsInviteModalOpen(false)}
+                  className="px-3.5 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 font-semibold text-white bg-[#EA5400] hover:bg-[#d04b00] rounded-lg cursor-pointer transition-colors shadow-xs"
+                >
+                  Send Invitation
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Reset Employee Password Modal */}
       <ResetEmployeePasswordModal
         isOpen={Boolean(passwordResetUser)}

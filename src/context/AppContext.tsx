@@ -228,6 +228,7 @@ interface AppContextType {
 
   // Workflows
   saveWorkflow: (workflow: ApprovalWorkflow) => void;
+  deleteWorkflow: (wfId: string) => void;
 
   // Organization & Invitations
   inviteEmployee: (data: {
@@ -2346,6 +2347,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const deleteWorkflow = (wfId: string) => {
+    setWorkflows((prev) => prev.filter((w) => w.id !== wfId));
+    addAuditLog({
+      action: 'WORKFLOW_DELETED',
+      entity: 'ApprovalWorkflow',
+      entityId: wfId,
+      details: `Deleted workflow ${wfId}.`,
+    });
+  };
+
   // ORG & INVITATION LIFECYCLE
   const inviteEmployee = (data: {
     name: string;
@@ -3177,6 +3188,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addCategory,
         createVendor,
         saveWorkflow,
+        deleteWorkflow,
         inviteEmployee,
         resendInvitation,
         simulateActivateAccount,

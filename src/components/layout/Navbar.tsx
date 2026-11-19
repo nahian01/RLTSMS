@@ -36,6 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     markNotificationRead,
     markAllNotificationsRead,
     setCurrentView,
+    hasPermission,
   } = useApp();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -138,6 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         {/* Primary CTA: New Requisition in Official Brand Orange */}
+        {hasPermission('requisitions:submit') && (
         <button
           type="button"
           onClick={onOpenNewRequisition}
@@ -147,6 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden sm:inline">New Requisition</span>
           <span className="sm:hidden">Request</span>
         </button>
+        )}
 
         {/* Notifications Popover */}
         <div className="relative">

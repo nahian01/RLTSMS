@@ -55,10 +55,14 @@ export const OrganizationView: React.FC = () => {
     deleteEmployee,
     createDepartment,
     createTeam,
+    hasPermission,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'employees' | 'departments' | 'invitations'>('employees');
   const [viewMode, setViewMode] = useState<'hierarchy' | 'table'>('hierarchy');
+
+  // Permission shorthand — controls all destructive / management actions
+  const canManageOrg = hasPermission('org:manage');
 
   // Filter States for Employees
   const [searchQuery, setSearchQuery] = useState('');
@@ -357,12 +361,15 @@ export const OrganizationView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          {canManageOrg && (
           <button
             onClick={() => setIsDeptModalOpen(true)}
             className="px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 rounded-lg cursor-pointer transition-colors shadow-2xs"
           >
             + Add Department
           </button>
+          )}
+          {canManageOrg && (
           <button
             onClick={() => {
               setTeamDeptId(departments[0]?.id || '');
@@ -372,6 +379,8 @@ export const OrganizationView: React.FC = () => {
           >
             + Add Team
           </button>
+          )}
+          {canManageOrg && (
           <button
             onClick={() => setIsInviteModalOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#d04b00] rounded-lg shadow-xs transition-colors cursor-pointer"
@@ -379,6 +388,7 @@ export const OrganizationView: React.FC = () => {
             <UserPlus className="w-3.5 h-3.5" />
             <span>Invite Employee</span>
           </button>
+          )}
         </div>
       </div>
 
@@ -717,6 +727,7 @@ export const OrganizationView: React.FC = () => {
                                       {/* Card Footer with Quick Actions */}
                                       <div className="pt-2 border-t border-slate-200/60 dark:border-slate-750 flex items-center justify-between text-[11px]">
                                         <span className="text-slate-400 font-mono text-[10px]">{member.phone}</span>
+                                        {canManageOrg && (
                                         <div className="inline-flex items-center gap-1">
                                           {(member.accountStatus === 'Pending Invitation' || member.accountStatus === 'Expired Invitation') && (
                                             <button
@@ -758,6 +769,7 @@ export const OrganizationView: React.FC = () => {
                                             </button>
                                           )}
                                         </div>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
@@ -831,6 +843,7 @@ export const OrganizationView: React.FC = () => {
 
                                     <div className="pt-2 border-t border-slate-200/60 dark:border-slate-750 flex items-center justify-between text-[11px]">
                                       <span className="text-slate-400 font-mono text-[10px]">{member.phone}</span>
+                                      {canManageOrg && (
                                       <div className="inline-flex items-center gap-1">
                                         {(member.accountStatus === 'Pending Invitation' || member.accountStatus === 'Expired Invitation') && (
                                           <button
@@ -872,6 +885,7 @@ export const OrganizationView: React.FC = () => {
                                           </button>
                                         )}
                                       </div>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -990,6 +1004,7 @@ export const OrganizationView: React.FC = () => {
                           </td>
 
                           <td className="py-3 px-4 text-right">
+                            {canManageOrg ? (
                             <div className="inline-flex items-center gap-1 justify-end">
                               {(u.accountStatus === 'Pending Invitation' || u.accountStatus === 'Expired Invitation') && (
                                 <button
@@ -1031,6 +1046,9 @@ export const OrganizationView: React.FC = () => {
                                 </button>
                               )}
                             </div>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 italic">View only</span>
+                            )}
                           </td>
                         </tr>
                       ))
@@ -1142,6 +1160,8 @@ export const OrganizationView: React.FC = () => {
                               {isCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
                               <span>{isCopied ? 'Copied' : 'Copy Link'}</span>
                             </button>
+                            {canManageOrg && (
+                            <>
                             <button
                               onClick={() => handleResend(u)}
                               className="px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-md cursor-pointer"
@@ -1175,6 +1195,8 @@ export const OrganizationView: React.FC = () => {
                               <Trash2 className="w-3 h-3" />
                               <span>Remove</span>
                             </button>
+                            </>
+                            )}
                           </td>
                         </tr>
                       );

@@ -13,18 +13,25 @@ import {
   Layers,
   Play,
   RotateCcw,
+  PlusCircle,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ApprovalWorkflow, WorkflowStageDefinition } from '../../types';
 
 export const WorkflowBuilderView: React.FC = () => {
-  const { workflows, users, departments, teams, saveWorkflow } = useApp();
+  const { workflows, users, departments, teams, saveWorkflow, deleteWorkflow } = useApp();
 
   const [activeWorkflowId, setActiveWorkflowId] = useState<string>(workflows[0]?.id || 'wf-1');
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('all');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [simulationResult, setSimulationResult] = useState<string | null>(null);
+
+  // New Workflow creation state
+  const [showNewWfModal, setShowNewWfModal] = useState(false);
+  const [newWfName, setNewWfName] = useState('');
+  const [newWfPurpose, setNewWfPurpose] = useState<'Purchase Requisitions' | 'Access-sharing requests'>('Purchase Requisitions');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const activeWf = workflows.find((w) => w.id === activeWorkflowId) || workflows[0];
 
@@ -126,6 +133,36 @@ export const WorkflowBuilderView: React.FC = () => {
     );
   };
 
+  // Create new workflow
+  const handleCreateWorkflow = () => {
+    if (!newWfName.trim()) return;
+    const newWf: ApprovalWorkflow = {
+      id: `wf-${Date.now()}`,
+      name: newWfName.trim(),
+      purpose: newWfPurpose,
+      stages: [],
+      purchaserRoleId: 'role-7',
+      purchaserRoleName: 'Purchaser',
+      version: '1.0',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    saveWorkflow(newWf);
+    setActiveWorkflowId(newWf.id);
+    setShowNewWfModal(false);
+    setNewWfName('');
+    setNewWfPurpose('Purchase Requisitions');
+  };
+
+  // Delete workflow (keep at least one)
+  const handleDeleteWorkflow = (wfId: string) => {
+    if (workflows.length <= 1) return;
+    deleteWorkflow(wfId);
+    const remaining = workflows.filter((w) => w.id !== wfId);
+    if (remaining.length > 0) setActiveWorkflowId(remaining[0].id);
+    setConfirmDeleteId(null);
+  };
+
   // Filter employees for palette
   const filteredUsers = users.filter((u) => {
     if (selectedDeptFilter !== 'all' && u.departmentId !== selectedDeptFilter) return false;
@@ -184,10 +221,10 @@ export const WorkflowBuilderView: React.FC = () => {
           Active Workflows:
         </span>
         {workflows.map((wf) => (
+          <div key={wf.id} className="relative group flex items-center">
           <button
-            key={wf.id}
             onClick={() => setActiveWorkflowId(wf.id)}
-            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer pr-6 ${
               activeWorkflowId === wf.id
                 ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 font-bold shadow-2xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
@@ -195,7 +232,24 @@ export const WorkflowBuilderView: React.FC = () => {
           >
             {wf.name} <span className="text-[10px] opacity-60">v{wf.version}</span>
           </button>
+          {workflows.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(wf.id); }}
+              className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-0.5 rounded text-rose-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-950 transition-all cursor-pointer"
+              title="Delete workflow"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+          </div>
         ))}
+        <button
+          onClick={() => setShowNewWfModal(true)}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg whitespace-nowrap bg-[#EA5400] text-white font-semibold text-[11px] hover:bg-[#d04b00] cursor-pointer transition-colors shadow-xs shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          New Workflow
+        </button>
       </div>
 
       {/* Simulation banner if triggered */}
@@ -452,6 +506,102 @@ export const WorkflowBuilderView: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* ── Create New Workflow Modal ── */}
+      {showNewWfModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setShowNewWfModal(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-7 h-7 rounded-lg bg-[#EA5400]/10 flex items-center justify-center text-[#EA5400]">
+                <Plus className="w-4 h-4" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Create New Workflow</h3>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Workflow Name *</label>
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="e.g. Standard IT Purchase Approval"
+                  value={newWfName}
+                  onChange={(e) => setNewWfName(e.target.value)}
+                  className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                />
+              </div>
+              <div>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Applies To</label>
+                <select
+                  value={newWfPurpose}
+                  onChange={(e) => setNewWfPurpose(e.target.value as 'Purchase Requisitions' | 'Access-sharing requests')}
+                  className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#EA5400]"
+                >
+                  <option value="Purchase Requisitions">Purchase Requisitions</option>
+                  <option value="Access-sharing requests">Access-sharing Requests</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowNewWfModal(false)}
+                className="px-3.5 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 cursor-pointer text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!newWfName.trim()}
+                onClick={handleCreateWorkflow}
+                className="px-4 py-1.5 font-semibold text-white bg-[#EA5400] hover:bg-[#d04b00] disabled:opacity-50 rounded-lg cursor-pointer transition-colors shadow-xs text-xs"
+              >
+                Create Workflow
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm Delete Workflow Dialog ── */}
+      {confirmDeleteId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Delete Workflow?</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              This will permanently remove the workflow <strong className="text-rose-600">{workflows.find(w => w.id === confirmDeleteId)?.name}</strong>. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-3.5 py-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 cursor-pointer text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteWorkflow(confirmDeleteId)}
+                className="px-4 py-1.5 font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg cursor-pointer transition-colors shadow-xs text-xs"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

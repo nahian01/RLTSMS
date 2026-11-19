@@ -36,6 +36,8 @@ interface SidebarMenuItem {
   badge?: number;
   badgeColor?: string;
   isProtected?: boolean;
+  /** If set, item is hidden when the user lacks this permission code */
+  requiredPermission?: string;
 }
 
 interface SidebarSection {
@@ -44,7 +46,7 @@ interface SidebarSection {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
-  const { currentView, setCurrentView, requisitions, accessAssignments, notifications, users } = useApp();
+  const { currentView, setCurrentView, requisitions, accessAssignments, notifications, users, hasPermission } = useApp();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Live badge counts
@@ -66,11 +68,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           id: 'services',
           label: 'Services & Tools',
           icon: Package,
+          requiredPermission: 'services:view',
         },
         {
           id: 'accounts',
           label: 'Accounts & Licenses',
           icon: Users,
+          requiredPermission: 'accounts:view',
         },
         {
           id: 'access',
@@ -78,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           icon: ShieldCheck,
           badge: accessAssignments.filter((a) => a.status === 'Active').length,
           badgeColor: 'bg-emerald-950 text-emerald-300 border border-emerald-800/60',
+          requiredPermission: 'access:view',
         },
       ],
     },
@@ -90,6 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           icon: FileText,
           badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined,
           badgeColor: 'bg-amber-950 text-amber-300 border border-amber-800/60',
+          requiredPermission: 'requisitions:view',
         },
         {
           id: 'approvals',
@@ -97,6 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           icon: CheckCircle2,
           badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined,
           badgeColor: 'bg-[#EA5400]/20 text-[#EA5400] border border-[#EA5400]/40',
+          requiredPermission: 'approvals:team',
         },
         {
           id: 'procurement',
@@ -104,22 +111,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           icon: ShoppingBag,
           badge: pendingPurchasesCount > 0 ? pendingPurchasesCount : undefined,
           badgeColor: 'bg-sky-950 text-sky-300 border border-sky-800/60',
+          requiredPermission: 'purchases:view',
         },
         {
           id: 'subscriptions',
           label: 'Subscriptions',
           icon: CalendarDays,
+          requiredPermission: 'subscriptions:view',
         },
         {
           id: 'expenses',
           label: 'Expenses',
           icon: DollarSign,
+          requiredPermission: 'expenses:view',
         },
         {
           id: 'cards',
           label: 'Payment Cards',
           icon: CreditCard,
           isProtected: true,
+          requiredPermission: 'cards:view_masked',
         },
       ],
     },
@@ -130,11 +141,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           id: 'rbac',
           label: 'RBAC & Permissions',
           icon: Shield,
+          requiredPermission: 'rbac:view',
+        },
+        {
+          id: 'workflows',
+          label: 'Approval Workflows',
+          icon: Workflow,
+          requiredPermission: 'workflows:write',
         },
         {
           id: 'org-structure',
           label: 'Dept & Teams',
           icon: Network,
+          requiredPermission: 'org:view',
         },
         {
           id: 'employees',
@@ -142,16 +161,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           icon: Users,
           badge: users.filter((u) => u.accountStatus === 'Active').length,
           badgeColor: 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200',
+          requiredPermission: 'org:view',
         },
         {
           id: 'organization',
           label: 'Org Hierarchy',
           icon: Building,
+          requiredPermission: 'org:view',
         },
         {
           id: 'reports',
           label: 'Reports',
           icon: BarChart3,
+          requiredPermission: 'reports:view',
         },
         {
           id: 'notifications',
@@ -164,11 +186,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           id: 'audit',
           label: 'Audit Logs',
           icon: History,
+          requiredPermission: 'audit:view',
         },
         {
           id: 'settings',
           label: 'Settings',
           icon: Settings,
+          requiredPermission: 'settings:manage',
         },
       ],
     },
@@ -218,6 +242,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
               )}
               <nav className="space-y-0.5">
                 {section.items.map((item) => {
+                  // Hide item when user lacks the required permission
+                  if (item.requiredPermission && !hasPermission(item.requiredPermission)) return null;
                   const Icon = item.icon;
                   const isActive = currentView === item.id || (item.id === 'procurement' && currentView === 'purchases');
 
