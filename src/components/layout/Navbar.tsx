@@ -195,34 +195,40 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               <div className="max-h-72 overflow-y-auto space-y-1.5 divide-y divide-slate-100 dark:divide-[#2D292A]">
-                {notifications.slice(0, 8).map((notif) => (
-                  <div
-                    key={notif.id}
-                    onClick={() => {
-                      markNotificationRead(notif.id);
-                      if (notif.linkAction) {
-                        setCurrentView(notif.linkAction.view, notif.linkAction.id);
-                        setShowNotifications(false);
-                      }
-                    }}
-                    className={`p-2.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                      notif.isRead
-                        ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#2D292A]/50'
-                        : 'bg-[#FFF1EB] dark:bg-[#EA5400]/10 text-slate-900 dark:text-slate-100 hover:bg-[#FFE4D6] font-medium'
-                    }`}
-                  >
-                    <div className="font-semibold text-slate-900 dark:text-white">{notif.title}</div>
-                    <div className="text-[11px] mt-0.5 line-clamp-2">{notif.message}</div>
-                    <div className="text-[10px] text-slate-400 mt-1">
-                      {new Date(notif.createdAt).toLocaleDateString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
+                {notifications.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    No notifications for your account
                   </div>
-                ))}
+                ) : (
+                  notifications.slice(0, 8).map((notif) => (
+                    <div
+                      key={notif.id}
+                      onClick={() => {
+                        markNotificationRead(notif.id);
+                        if (notif.linkAction) {
+                          setCurrentView(notif.linkAction.view, notif.linkAction.id);
+                          setShowNotifications(false);
+                        }
+                      }}
+                      className={`p-2.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                        notif.isRead
+                          ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#2D292A]/50'
+                          : 'bg-[#FFF1EB] dark:bg-[#EA5400]/10 text-slate-900 dark:text-slate-100 hover:bg-[#FFE4D6] font-medium'
+                      }`}
+                    >
+                      <div className="font-semibold text-slate-900 dark:text-white">{notif.title}</div>
+                      <div className="text-[11px] mt-0.5 line-clamp-2">{notif.message}</div>
+                      <div className="text-[10px] text-slate-400 mt-1">
+                        {new Date(notif.createdAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="pt-2 border-t border-slate-100 dark:border-[#2D292A] text-center">

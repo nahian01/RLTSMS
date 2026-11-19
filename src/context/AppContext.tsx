@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
   User,
   Department,
@@ -96,6 +96,7 @@ interface AppContextType {
   emailTemplates: EmailTemplate[];
   emailLogs: EmailDeliveryLog[];
   notifications: AppNotification[];
+  allNotifications?: AppNotification[];
   auditLogs: AuditLog[];
 
   // Predefined reasons management (Super Admin)
@@ -3052,6 +3053,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return updated;
   };
 
+  // User-wise notifications memo: filter notifications specifically for the current authenticated user
+  const userNotifications = useMemo(() => {
+    if (!currentUser) return [];
+    return notifications.filter((n) => {
+      if (n.recipientId === currentUser.id) return true;
+      if (n.recipientId && currentUser.email && n.recipientId.toLowerCase() === currentUser.email.toLowerCase()) return true;
+      if (n.recipientId === '*' || n.recipientId === 'all') return true;
+      return false;
+    });
+  }, [notifications, currentUser]);
+
   const markNotificationRead = (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
@@ -3059,7 +3071,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markAllNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    if (!currentUser) return;
+    setNotifications((prev) =>
+      prev.map((n) => {
+        const isForMe =
+          n.recipientId === currentUser.id ||
+          (n.recipientId && currentUser.email && n.recipientId.toLowerCase() === currentUser.email.toLowerCase()) ||
+          n.recipientId === '*' ||
+          n.recipientId === 'all';
+        return isForMe ? { ...n, isRead: true } : n;
+      })
+    );
   };
 
   const triggerMonthlyPlanningDispatch = () => {
@@ -3147,7 +3169,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         purchases,
         emailTemplates,
         emailLogs,
-        notifications,
+        notifications: userNotifications,
+        allNotifications: notifications,
         auditLogs,
         createPredefinedReason,
         updatePredefinedReason,

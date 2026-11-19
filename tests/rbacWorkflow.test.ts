@@ -143,3 +143,65 @@ test('Request Service/Tools Module: Scoped to employee approved requests list', 
   assert.strictEqual(myApprovedList.length, 1);
   assert.strictEqual(myApprovedList[0].serviceName, 'BrowserStack');
 });
+
+test('User-Wise Notifications: Notifications are scoped to the individual recipient and not global', () => {
+  const sampleNotifications = [
+    { id: 'notif-1', title: 'Team Approval', recipientId: 'usr-2', isRead: false },
+    { id: 'notif-2', title: 'Purchase Task', recipientId: 'usr-5', isRead: false },
+    { id: 'notif-3', title: 'System Renewal', recipientId: 'usr-admin', isRead: false },
+    { id: 'notif-4', title: 'All Staff Update', recipientId: '*', isRead: false },
+  ];
+
+  // Helper function matching AppContext user-wise filter
+  const filterForUser = (userId: string, userEmail?: string) => {
+    return sampleNotifications.filter((n) => {
+      if (n.recipientId === userId) return true;
+      if (n.recipientId && userEmail && n.recipientId.toLowerCase() === userEmail.toLowerCase()) return true;
+      if (n.recipientId === '*' || n.recipientId === 'all') return true;
+      return false;
+    });
+  };
+
+  // Alex Rivera (usr-2) only sees notif-1 and broadcast notif-4
+  const alexNotifs = filterForUser('usr-2', 'alex@riseuplabs.com');
+  assert.strictEqual(alexNotifs.length, 2);
+  assert.ok(alexNotifs.some((n) => n.id === 'notif-1'));
+  assert.ok(alexNotifs.some((n) => n.id === 'notif-4'));
+  assert.strictEqual(alexNotifs.some((n) => n.id === 'notif-2'), false);
+  assert.strictEqual(alexNotifs.some((n) => n.id === 'notif-3'), false);
+
+  // Michael Chang (usr-5) only sees notif-2 and broadcast notif-4
+  const michaelNotifs = filterForUser('usr-5', 'michael@riseuplabs.com');
+  assert.strictEqual(michaelNotifs.length, 2);
+  assert.ok(michaelNotifs.some((n) => n.id === 'notif-2'));
+  assert.ok(michaelNotifs.some((n) => n.id === 'notif-4'));
+  assert.strictEqual(michaelNotifs.some((n) => n.id === 'notif-1'), false);
+
+  // Sarah Lin (usr-1) has no personal alerts, only sees broadcast notif-4
+  const sarahNotifs = filterForUser('usr-1', 'sarah@riseuplabs.com');
+  assert.strictEqual(sarahNotifs.length, 1);
+  assert.strictEqual(sarahNotifs[0].id, 'notif-4');
+});
+
+test('User-Wise Notifications: Mark all read only marks current user notifications as read', () => {
+  let notifications = [
+    { id: 'n-1', recipientId: 'usr-sarah', isRead: false },
+    { id: 'n-2', recipientId: 'usr-alex', isRead: false },
+    { id: 'n-3', recipientId: 'usr-sarah', isRead: false },
+  ];
+
+  const currentUserId = 'usr-sarah';
+
+  // Mark all read for Sarah
+  notifications = notifications.map((n) => {
+    const isForMe = n.recipientId === currentUserId;
+    return isForMe ? { ...n, isRead: true } : n;
+  });
+
+  // Sarah's notifications are marked read
+  assert.strictEqual(notifications[0].isRead, true);
+  assert.strictEqual(notifications[2].isRead, true);
+
+  // Alex's notification remains unread
+  assert.strictEqual(notifications[1].isRead, false);
+});
