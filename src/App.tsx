@@ -29,6 +29,7 @@ import { ReportsView } from './components/reports/ReportsView';
 import { NotificationsView } from './components/notifications/NotificationsView';
 import { AuditLogsView } from './components/audit/AuditLogsView';
 import { SettingsView } from './components/settings/SettingsView';
+import { RequestToolsView } from './components/requests/RequestToolsView';
 
 const MainLayout: React.FC = () => {
   const { currentView } = useApp();
@@ -40,6 +41,8 @@ const MainLayout: React.FC = () => {
     switch (currentView) {
       case 'dashboard':
         return <DashboardView />;
+      case 'request-tools':
+        return <RequestToolsView />;
       case 'requisitions':
         return <RequisitionsView />;
       case 'approvals':

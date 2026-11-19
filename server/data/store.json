@@ -264,15 +264,10 @@
     {
       "id": "role-3",
       "name": "Employee",
-      "description": "Submit purchase requisitions and request tool access",
+      "description": "Request digital tools & services access and view approved tools",
       "isSystem": true,
       "permissions": [
         "dashboard:view",
-        "requisitions:view",
-        "requisitions:submit",
-        "services:view",
-        "accounts:view",
-        "access:view",
         "access:request"
       ]
     },

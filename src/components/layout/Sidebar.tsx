@@ -21,6 +21,7 @@ import {
   Building,
   Shield,
   Network,
+  KeyRound,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -46,13 +47,28 @@ interface SidebarSection {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
-  const { currentView, setCurrentView, requisitions, accessAssignments, notifications, users, hasPermission } = useApp();
+  const {
+    currentView,
+    setCurrentView,
+    requisitions,
+    accessAssignments,
+    accessRequests,
+    notifications,
+    users,
+    currentUser,
+    hasPermission,
+  } = useApp();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Live badge counts
   const pendingApprovalsCount = requisitions.filter((r) => r.status === 'Pending Approval').length;
   const pendingPurchasesCount = requisitions.filter((r) => r.status === 'Approved').length;
   const unreadNotifsCount = notifications.filter((n) => !n.isRead).length;
+  const myApprovedToolsCount = accessRequests.filter(
+    (r) =>
+      (r.requesterId === currentUser?.id || r.requesterEmail?.toLowerCase() === currentUser?.email?.toLowerCase()) &&
+      r.status === 'Approved'
+  ).length;
 
   // Exact 14-destination navigation per PRD & Transformation Spec (Part 4.1)
   const menuSections: SidebarSection[] = [
@@ -63,6 +79,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           id: 'dashboard',
           label: 'Dashboard',
           icon: LayoutDashboard,
+        },
+        {
+          id: 'request-tools',
+          label: 'Request Service/Tools',
+          icon: KeyRound,
+          badge: myApprovedToolsCount > 0 ? myApprovedToolsCount : undefined,
+          badgeColor: 'bg-emerald-950 text-emerald-300 border border-emerald-800/60',
+          requiredPermission: 'access:request',
         },
         {
           id: 'services',
@@ -233,61 +257,66 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
 
         {/* Navigation Sections */}
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-5">
-          {menuSections.map((section) => (
-            <div key={section.label}>
-              {!isCollapsed && (
-                <div className="px-3 mb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
-                  {section.label}
-                </div>
-              )}
-              <nav className="space-y-0.5">
-                {section.items.map((item) => {
-                  // Hide item when user lacks the required permission
-                  if (item.requiredPermission && !hasPermission(item.requiredPermission)) return null;
-                  const Icon = item.icon;
-                  const isActive = currentView === item.id || (item.id === 'procurement' && currentView === 'purchases');
+          {menuSections.map((section) => {
+            const visibleItems = section.items.filter(
+              (item) => !item.requiredPermission || hasPermission(item.requiredPermission)
+            );
+            if (visibleItems.length === 0) return null;
 
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleNavClick(item.id)}
-                      title={isCollapsed ? item.label : undefined}
-                      className={`w-full flex items-center ${
-                        isCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2'
-                      } rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                        isActive
-                          ? 'bg-[#EA5400] text-white shadow-xs font-semibold'
-                          : 'text-slate-300 hover:bg-[#2D292A] hover:text-white'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 truncate">
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                        {!isCollapsed && <span className="truncate">{item.label}</span>}
-                        {!isCollapsed && item.isProtected && (
-                          <span title="Restricted Area">
-                            <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+            return (
+              <div key={section.label}>
+                {!isCollapsed && (
+                  <div className="px-3 mb-1.5 text-[10px] font-semibold tracking-wider text-slate-400 uppercase">
+                    {section.label}
+                  </div>
+                )}
+                <nav className="space-y-0.5">
+                  {visibleItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentView === item.id || (item.id === 'procurement' && currentView === 'purchases');
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleNavClick(item.id)}
+                        title={isCollapsed ? item.label : undefined}
+                        className={`w-full flex items-center ${
+                          isCollapsed ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2'
+                        } rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                          isActive
+                            ? 'bg-[#EA5400] text-white shadow-xs font-semibold'
+                            : 'text-slate-300 hover:bg-[#2D292A] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                          {!isCollapsed && <span className="truncate">{item.label}</span>}
+                          {!isCollapsed && item.isProtected && (
+                            <span title="Restricted Area">
+                              <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                            </span>
+                          )}
+                        </div>
+
+                        {!isCollapsed && item.badge !== undefined && (
+                          <span
+                            className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                              isActive
+                                ? 'bg-white text-[#211E1F] font-bold'
+                                : item.badgeColor || 'bg-[#2D292A] text-slate-300'
+                            }`}
+                          >
+                            {item.badge}
                           </span>
                         )}
-                      </div>
-
-                      {!isCollapsed && item.badge !== undefined && (
-                        <span
-                          className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                            isActive
-                              ? 'bg-white text-[#211E1F] font-bold'
-                              : item.badgeColor || 'bg-[#2D292A] text-slate-300'
-                          }`}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-          ))}
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+            );
+          })}
         </div>
 
         {/* Footer info: Slogan and official brand attribution */}

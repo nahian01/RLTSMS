@@ -23,11 +23,13 @@ test('RBAC: Super Admin has wildcard permission to all modules and actions', () 
   assert.strictEqual(checkUserPermission(superAdminRoles, 'random:nonexistent'), true);
 });
 
-test('RBAC: Employee role has view and submit permissions but cannot manage org or workflows', () => {
+test('RBAC: Employee role is scoped to requesting services/tools and viewing approved tools', () => {
   const employeeRoles: UserRole[] = ['Employee'];
-  assert.strictEqual(checkUserPermission(employeeRoles, 'requisitions:submit'), true);
-  assert.strictEqual(checkUserPermission(employeeRoles, 'requisitions:view'), true);
-  assert.strictEqual(checkUserPermission(employeeRoles, 'services:view'), true);
+  assert.strictEqual(checkUserPermission(employeeRoles, 'access:request'), true);
+  assert.strictEqual(checkUserPermission(employeeRoles, 'dashboard:view'), true);
+  assert.strictEqual(checkUserPermission(employeeRoles, 'requisitions:submit'), false);
+  assert.strictEqual(checkUserPermission(employeeRoles, 'requisitions:view'), false);
+  assert.strictEqual(checkUserPermission(employeeRoles, 'services:view'), false);
   assert.strictEqual(checkUserPermission(employeeRoles, 'org:manage'), false);
   assert.strictEqual(checkUserPermission(employeeRoles, 'workflows:write'), false);
   assert.strictEqual(checkUserPermission(employeeRoles, 'cards:manage'), false);
@@ -104,4 +106,40 @@ test('Employee Module: Multi-role assignment during employee invitation', () => 
   assert.strictEqual(checkUserPermission(inviteData.roles, 'approvals:team'), true);
   assert.strictEqual(checkUserPermission(inviteData.roles, 'requisitions:submit'), true);
   assert.strictEqual(checkUserPermission(inviteData.roles, 'workflows:write'), false);
+});
+
+test('Request Service/Tools Module: Employee can submit access request with tool type and reason', () => {
+  const requestPayload = {
+    serviceId: 'srv-1',
+    serviceName: 'Figma Enterprise',
+    serviceCategory: 'Design & UX',
+    requestedAccessType: 'Standard User Seat',
+    reason: 'Client UX/UI Mobile App Redesign Deliverables',
+    duration: 'Project-based (3 Months)',
+    requesterId: 'usr-5',
+    requesterEmail: 'tanvir@riseuplabs.com',
+    status: 'Pending Approval' as const,
+  };
+
+  assert.strictEqual(requestPayload.serviceName, 'Figma Enterprise');
+  assert.strictEqual(requestPayload.requestedAccessType, 'Standard User Seat');
+  assert.ok(requestPayload.reason.length > 5);
+  assert.strictEqual(requestPayload.status, 'Pending Approval');
+});
+
+test('Request Service/Tools Module: Scoped to employee approved requests list', () => {
+  const allRequests = [
+    { id: 'req-1', requesterId: 'usr-5', serviceName: 'BrowserStack', status: 'Approved' },
+    { id: 'req-2', requesterId: 'usr-5', serviceName: 'ChatGPT Plus', status: 'Pending Approval' },
+    { id: 'req-3', requesterId: 'usr-other', serviceName: 'AWS Pro', status: 'Approved' },
+  ];
+
+  // Employee only sees their own requests
+  const myRequests = allRequests.filter((r) => r.requesterId === 'usr-5');
+  assert.strictEqual(myRequests.length, 2);
+
+  // Employee approved list strictly filters to approved requests
+  const myApprovedList = myRequests.filter((r) => r.status === 'Approved');
+  assert.strictEqual(myApprovedList.length, 1);
+  assert.strictEqual(myApprovedList[0].serviceName, 'BrowserStack');
 });

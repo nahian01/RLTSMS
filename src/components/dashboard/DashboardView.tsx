@@ -22,6 +22,7 @@ import {
   Lock,
   Sparkles,
   ExternalLink,
+  KeyRound,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -235,6 +236,12 @@ export const DashboardView: React.FC = () => {
     );
   }, [accessAssignments, currentUser]);
 
+  const myAccessRequests = useMemo(() => {
+    return accessRequests.filter(
+      (r) => r.requesterId === currentUser.id || r.requesterEmail === currentUser.email
+    );
+  }, [accessRequests, currentUser]);
+
   const mySubmittedRequisitions = useMemo(() => {
     return requisitions.filter((r) => r.requesterId === currentUser.id);
   }, [requisitions, currentUser.id]);
@@ -424,7 +431,7 @@ export const DashboardView: React.FC = () => {
                 </h2>
               </div>
               <button
-                onClick={() => setCurrentView('access')}
+                onClick={() => setCurrentView('request-tools')}
                 className="text-xs text-[#EA5400] font-semibold hover:underline cursor-pointer"
               >
                 Access Details →
@@ -467,44 +474,45 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          {/* My Submitted Requisitions */}
+          {/* My Tool & Service Access Requests */}
           <div className="p-5 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-sky-600" />
+                <KeyRound className="w-4 h-4 text-[#EA5400]" />
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  My Requisitions ({mySubmittedRequisitions.length})
+                  My Tool Requests ({myAccessRequests.length})
                 </h2>
               </div>
               <button
-                onClick={() => setCurrentView('requisitions')}
+                onClick={() => setCurrentView('request-tools')}
                 className="text-xs text-[#EA5400] font-semibold hover:underline cursor-pointer"
               >
-                View All →
+                Request Tools →
               </button>
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs">
-              {mySubmittedRequisitions.length === 0 ? (
+              {myAccessRequests.length === 0 ? (
                 <div className="py-6 text-center text-slate-400 italic">
-                  You haven't submitted any purchase requisitions yet.
+                  You haven't requested access to any tools or services yet.
                 </div>
               ) : (
-                mySubmittedRequisitions.map((req) => (
+                myAccessRequests.map((req) => (
                   <div
                     key={req.id}
-                    onClick={() => setCurrentView('requisitions', req.id)}
+                    onClick={() => setCurrentView('request-tools')}
                     className="py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-750 px-2 rounded-lg cursor-pointer"
                   >
                     <div>
-                      <div className="font-mono text-sky-600 font-semibold">{req.requisitionNumber}</div>
+                      <div className="font-mono text-sky-600 font-semibold">{req.requestNumber}</div>
                       <div className="font-medium text-slate-900 dark:text-white">{req.serviceName}</div>
+                      <div className="text-[11px] text-slate-400">{req.reason}</div>
                     </div>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         req.status === 'Approved'
                           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
-                          : req.status === 'Pending Approval'
+                          : req.status === 'Pending Approval' || req.status === 'Under Review'
                           ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
                           : 'bg-slate-100 text-slate-600'
                       }`}

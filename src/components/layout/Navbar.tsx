@@ -138,18 +138,28 @@ export const Navbar: React.FC<NavbarProps> = ({
           <Search className="w-4 h-4" />
         </button>
 
-        {/* Primary CTA: New Requisition in Official Brand Orange */}
-        {hasPermission('requisitions:submit') && (
-        <button
-          type="button"
-          onClick={onOpenNewRequisition}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#D64D00] active:bg-[#B84000] rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Requisition</span>
-          <span className="sm:hidden">Request</span>
-        </button>
-        )}
+        {/* Primary CTA: New Requisition or Request Tool based on permissions */}
+        {hasPermission('requisitions:submit') ? (
+          <button
+            type="button"
+            onClick={onOpenNewRequisition}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#D64D00] active:bg-[#B84000] rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Requisition</span>
+            <span className="sm:hidden">Request</span>
+          </button>
+        ) : hasPermission('access:request') ? (
+          <button
+            type="button"
+            onClick={() => setCurrentView('request-tools')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#D64D00] active:bg-[#B84000] rounded-lg transition-colors shadow-xs whitespace-nowrap cursor-pointer"
+          >
+            <KeyRound className="w-4 h-4" />
+            <span className="hidden sm:inline">Request Tool</span>
+            <span className="sm:hidden">Request</span>
+          </button>
+        ) : null}
 
         {/* Notifications Popover */}
         <div className="relative">
