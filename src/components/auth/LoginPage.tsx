@@ -625,16 +625,30 @@ export const LoginPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('login');
-                      setRecoverySubmitted(false);
-                    }}
-                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-white bg-[#141E31] hover:bg-[#1E2B45] border border-[#26344D] transition-colors cursor-pointer"
-                  >
-                    Return to Sign In
-                  </button>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.history.pushState({}, '', '/reset-password');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }}
+                      className="w-full py-2.5 rounded-xl text-xs font-semibold text-white bg-[#EA5400] hover:bg-[#d04b00] transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>Enter 6-Digit OTP &amp; Reset Password</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('login');
+                        setRecoverySubmitted(false);
+                      }}
+                      className="w-full py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-[#141E31] hover:bg-[#1E2B45] border border-[#26344D] transition-colors cursor-pointer"
+                    >
+                      Return to Sign In
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleRecoverySubmit} noValidate className="space-y-4">
@@ -697,6 +711,20 @@ export const LoginPage: React.FC = () => {
                       </>
                     )}
                   </button>
+
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.history.pushState({}, '', '/reset-password');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }}
+                      className="text-xs text-slate-400 hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#EA5400]" />
+                      <span>Already have a 6-digit OTP code? Enter OTP &amp; Reset Password &rarr;</span>
+                    </button>
+                  </div>
                 </form>
               )}
             </div>

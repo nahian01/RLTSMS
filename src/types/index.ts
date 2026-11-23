@@ -35,6 +35,7 @@ export interface User {
   invitationSentAt?: string;
   invitationExpiresAt?: string;
   invitationToken?: string;
+  usedInvitationTokens?: string[];
   cardPermissionLevel?: CardPermissionLevel;
   avatar?: string;
   isAnonymized?: boolean;

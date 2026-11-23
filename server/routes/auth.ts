@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { dbStore, verifyPassword, hashPassword, ServerUser } from '../data/store';
+import { sendPasswordResetEmail } from '../services/mailer';
 
 export const authRouter = Router();
 
@@ -21,8 +22,21 @@ interface OtpEntry {
   expiresAt: number;
 }
 
+interface PasswordResetSession {
+  userId: string;
+  email: string;
+  token: string;
+  otpCode: string;
+  createdAt: number;
+  expiresAt: number; // 10-minute expiry per security mandate
+  isUsed: boolean;
+  usedAt?: string;
+}
+
 const tokensMap = new Map<string, TokenEntry>();
 const otpsMap = new Map<string, OtpEntry>();
+const passwordResetsMap = new Map<string, PasswordResetSession>();
+const usedActivationTokens = new Set<string>();
 
 // Rate limiting for auth
 const failedLoginAttempts = new Map<string, { count: number; lockedUntil: number }>();
@@ -196,11 +210,27 @@ authRouter.get('/verify-token', (req: Request, res: Response) => {
     }
   }
 
+  // Check if token was already used in-memory
+  if (usedActivationTokens.has(token) || (entry && entry.isUsed)) {
+    return res.status(200).json({
+      valid: false,
+      alreadyActive: true,
+      error: 'This activation link has already been used. Please sign in with your email and password.',
+      user: targetUser ? {
+        id: targetUser.id,
+        name: targetUser.name,
+        email: targetUser.email,
+        designation: targetUser.designation,
+        departmentName: targetUser.departmentName,
+      } : undefined,
+    });
+  }
+
   if (!targetUser) {
     return res.status(404).json({ valid: false, error: 'Invalid or unknown invitation link.' });
   }
 
-  if (targetUser.accountStatus === 'Active') {
+  if (targetUser.accountStatus === 'Active' || targetUser.usedInvitationTokens?.includes(token)) {
     return res.status(200).json({
       valid: false,
       alreadyActive: true,
@@ -219,6 +249,7 @@ authRouter.get('/verify-token', (req: Request, res: Response) => {
   if (entry && (entry.isUsed || Date.now() > entry.expiresAt)) {
     return res.status(400).json({
       valid: false,
+      expired: true,
       error: entry.isUsed
         ? 'This activation token has already been consumed.'
         : 'Activation link has expired (48h window exceeded). Please request a new invitation.',
@@ -228,6 +259,7 @@ authRouter.get('/verify-token', (req: Request, res: Response) => {
   if (targetUser.invitationExpiresAt && new Date(targetUser.invitationExpiresAt).getTime() < Date.now()) {
     return res.status(400).json({
       valid: false,
+      expired: true,
       error: 'Activation link has expired (48h window exceeded). Please request a new invitation.',
     });
   }
@@ -279,19 +311,18 @@ function handleAccountActivation(req: Request, res: Response) {
     return res.status(400).json({ error: 'Invalid or unknown activation link.' });
   }
 
-  if (entry) {
-    if (entry.isUsed) {
-      return res.status(400).json({ error: 'This activation token has already been consumed.' });
-    }
-    if (Date.now() > entry.expiresAt) {
-      return res.status(400).json({ error: 'Activation link has expired (48h window exceeded).' });
-    }
-    entry.isUsed = true;
-    tokensMap.set(tokenHash, entry);
+  if (usedActivationTokens.has(tokenStr) || (entry && entry.isUsed) || targetUser.accountStatus === 'Active' || targetUser.usedInvitationTokens?.includes(tokenStr)) {
+    return res.status(400).json({ error: 'This activation link has already been used and is no longer valid. Please sign in.' });
   }
 
   if (targetUser.invitationExpiresAt && new Date(targetUser.invitationExpiresAt).getTime() < Date.now()) {
-    return res.status(400).json({ error: 'Activation link has expired (48h window exceeded).' });
+    return res.status(400).json({ error: 'Activation link has expired (48h window exceeded). Please request a new invitation.' });
+  }
+
+  usedActivationTokens.add(tokenStr);
+  if (entry) {
+    entry.isUsed = true;
+    tokensMap.set(tokenHash, entry);
   }
 
   const newHash = hashPassword(passToSet);
@@ -302,6 +333,7 @@ function handleAccountActivation(req: Request, res: Response) {
     if (user) {
       user.accountStatus = 'Active';
       user.passwordHash = newHash;
+      user.usedInvitationTokens = [...(user.usedInvitationTokens || []), tokenStr];
       user.invitationToken = undefined; // Invalidate single-use token
     }
 
@@ -339,7 +371,7 @@ authRouter.post('/magic-link/activate', (req: Request, res: Response) => {
   return handleAccountActivation(req, res);
 });
 
-// Request 6-digit OTP
+// Request 6-digit OTP (10-minute expiry)
 authRouter.post('/request-otp', (req: Request, res: Response) => {
   const userId = req.headers['x-user-id'] as string || 'usr-admin';
   const { action = 'security_verification' } = req.body;
@@ -353,7 +385,7 @@ authRouter.post('/request-otp', (req: Request, res: Response) => {
   // Generate 6-digit OTP
   const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const otpHash = crypto.createHash('sha256').update(otpCode).digest('hex');
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5-minute expiry
+  const expiresAt = Date.now() + 10 * 60 * 1000; // Strictly 10-minute expiry
 
   otpsMap.set(user.id, {
     userId: user.id,
@@ -380,9 +412,8 @@ authRouter.post('/request-otp', (req: Request, res: Response) => {
 
   return res.json({
     success: true,
-    message: 'OTP dispatched to registered email.',
-    expiresInSeconds: 300,
-    // Dev preview helper
+    message: 'OTP dispatched to registered email (valid for 10 minutes).',
+    expiresInSeconds: 600,
     demoOtp: otpCode,
   });
 });
@@ -399,7 +430,7 @@ authRouter.post('/verify-otp', (req: Request, res: Response) => {
 
   if (Date.now() > entry.expiresAt) {
     otpsMap.delete(userId);
-    return res.status(400).json({ error: 'OTP has expired. Please request a new code.' });
+    return res.status(400).json({ error: 'OTP has expired (10-minute window exceeded). Please request a new code.' });
   }
 
   entry.attempts += 1;
@@ -417,8 +448,8 @@ authRouter.post('/verify-otp', (req: Request, res: Response) => {
   return res.json({ success: true, message: 'OTP verification succeeded.' });
 });
 
-// POST /api/auth/forgot-password - Request password recovery instructions (Section 6.5)
-authRouter.post('/forgot-password', (req: Request, res: Response) => {
+// POST /api/auth/forgot-password - Dispatches 10-minute OTP and password reset link via real SMTP
+authRouter.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ error: 'Work email is required.' });
@@ -426,9 +457,34 @@ authRouter.post('/forgot-password', (req: Request, res: Response) => {
 
   const normalizedEmail = String(email).trim().toLowerCase();
   const state = dbStore.getState();
-  const user = state.users.find((u) => u.email.toLowerCase() === normalizedEmail);
+  const user = state.users.find(
+    (u) =>
+      u.email.toLowerCase() === normalizedEmail ||
+      (u.originalEmail && u.originalEmail.toLowerCase() === normalizedEmail) ||
+      (u.mainEmail && u.mainEmail.toLowerCase() === normalizedEmail)
+  );
 
   if (user) {
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetToken = `rst_${user.id}_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+    const expiresAt = Date.now() + 10 * 60 * 1000; // Strictly 10 minutes
+
+    const session: PasswordResetSession = {
+      userId: user.id,
+      email: user.email,
+      token: resetToken,
+      otpCode,
+      createdAt: Date.now(),
+      expiresAt,
+      isUsed: false,
+    };
+
+    passwordResetsMap.set(resetToken, session);
+    passwordResetsMap.set(`otp_${user.email.toLowerCase()}_${otpCode}`, session);
+    if (user.originalEmail) {
+      passwordResetsMap.set(`otp_${user.originalEmail.toLowerCase()}_${otpCode}`, session);
+    }
+
     dbStore.mutate((s) => {
       s.emailLogs.unshift({
         id: `elog-${Date.now()}`,
@@ -436,7 +492,9 @@ authRouter.post('/forgot-password', (req: Request, res: Response) => {
         templateName: 'Password Reset Instructions',
         recipientEmail: user.email,
         recipientName: user.name,
-        subject: `[RLTSMS Security] Password reset instructions for ${user.name}`,
+        to: user.email,
+        body: `Password reset verification OTP (${otpCode}) requested for ${user.email}. Valid for 10 minutes. Token: ${resetToken}`,
+        subject: `[RLTSMS Security] Reset your Riseup Labs account password`,
         status: 'Sent',
         attemptCount: 1,
         dispatchedAt: new Date().toISOString(),
@@ -450,15 +508,134 @@ authRouter.post('/forgot-password', (req: Request, res: Response) => {
         action: 'Password Reset Requested',
         entity: 'Authentication',
         entityId: user.id,
-        details: `Password reset instructions dispatched to ${user.email}.`,
+        details: `Dispatched 10-minute single-use OTP (${otpCode}) and reset link to ${user.email}.`,
       });
+    });
+
+    // Real SMTP dispatch
+    sendPasswordResetEmail({
+      recipientEmail: user.email,
+      recipientName: user.name,
+      resetToken,
+      otpCode,
+    }).catch((err) => {
+      console.error('[Auth] Failed to send password reset email:', err.message);
     });
   }
 
-  // Security requirement: Do not reveal whether an email exists
+  // Security requirement: generic success message to prevent user enumeration
   return res.json({
     success: true,
-    message: 'If an account exists for this email, password reset instructions will be sent.',
+    message: 'If an account exists for this email, password reset instructions with a 10-minute security OTP and reset link have been dispatched.',
+  });
+});
+
+// GET /api/auth/verify-reset-token - Verifies password reset token state (single-use & 10m expiry)
+authRouter.get('/verify-reset-token', (req: Request, res: Response) => {
+  const token = String(req.query.token || '').trim();
+  if (!token) {
+    return res.status(400).json({ valid: false, error: 'Reset token is required.' });
+  }
+
+  const session = passwordResetsMap.get(token);
+  if (!session) {
+    return res.status(404).json({ valid: false, error: 'Invalid or unknown password reset link.' });
+  }
+
+  if (session.isUsed) {
+    return res.status(200).json({
+      valid: false,
+      alreadyUsed: true,
+      error: 'This password reset link has already been used. For your security, reset links are single-use.',
+    });
+  }
+
+  if (Date.now() > session.expiresAt) {
+    return res.status(200).json({
+      valid: false,
+      expired: true,
+      error: 'Password reset link has expired (10-minute validity exceeded). Please request a new link.',
+    });
+  }
+
+  const state = dbStore.getState();
+  const user = state.users.find((u) => u.id === session.userId || u.email.toLowerCase() === session.email.toLowerCase());
+
+  return res.json({
+    valid: true,
+    user: {
+      email: session.email,
+      name: user?.name || 'User',
+    },
+  });
+});
+
+// POST /api/auth/reset-password - Consumes reset token or OTP to configure new password (single-use)
+authRouter.post('/reset-password', (req: Request, res: Response) => {
+  const { token, otp, email, newPassword } = req.body;
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+  }
+
+  let session: PasswordResetSession | undefined;
+  if (token) {
+    session = passwordResetsMap.get(String(token).trim());
+  } else if (otp && email) {
+    const key = `otp_${String(email).trim().toLowerCase()}_${String(otp).trim()}`;
+    session = passwordResetsMap.get(key);
+  }
+
+  if (!session) {
+    return res.status(400).json({ error: 'Invalid password reset link or OTP code.' });
+  }
+
+  if (session.isUsed) {
+    return res.status(400).json({
+      error: 'This password reset link or OTP code has already been used. Reset links are strictly single-use.',
+    });
+  }
+
+  if (Date.now() > session.expiresAt) {
+    return res.status(400).json({
+      error: 'Password reset code has expired (10-minute validity exceeded). Please request a new code.',
+    });
+  }
+
+  // Immediately invalidate session (single-use enforcement)
+  session.isUsed = true;
+  session.usedAt = new Date().toISOString();
+
+  const state = dbStore.getState();
+  const user = state.users.find((u) => u.id === session!.userId || u.email.toLowerCase() === session!.email.toLowerCase());
+  if (!user) {
+    return res.status(404).json({ error: 'User account not found.' });
+  }
+
+  const newHash = hashPassword(newPassword);
+  const targetId = user.id;
+
+  dbStore.mutate((s) => {
+    const u = s.users.find((x) => x.id === targetId);
+    if (u) {
+      u.passwordHash = newHash;
+    }
+
+    s.auditLogs.unshift({
+      id: `aud-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      userId: targetId,
+      userName: user.name,
+      action: 'Password Reset Completed',
+      entity: 'Authentication',
+      entityId: targetId,
+      details: `Employee ${user.name} (${user.email}) successfully reset account password via verified OTP/reset link.`,
+    });
+  });
+
+  return res.json({
+    success: true,
+    message: 'Password has been successfully reset. Please sign in with your new password.',
   });
 });
 

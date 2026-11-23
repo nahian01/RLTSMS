@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { LoginPage } from './components/auth/LoginPage';
 import { ActivateAccountPage } from './components/auth/ActivateAccountPage';
+import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { CommandPalette } from './components/common/CommandPalette';
@@ -131,25 +132,57 @@ const MainLayout: React.FC = () => {
 const AppContent: React.FC = () => {
   const { isAuthenticated } = useApp();
   const [forceLogin, setForceLogin] = useState(false);
+  const [pathname, setPathname] = useState(window.location.pathname);
 
-  // Check URL query parameters and pathname for account activation token
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setPathname(window.location.pathname);
+    };
+    window.addEventListener('popstate', handleLocationChange);
+    return () => window.removeEventListener('popstate', handleLocationChange);
+  }, []);
+
+  // Check URL query parameters and pathname
   const urlParams = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(
     window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
   );
-  const activationToken = urlParams.get('token') || hashParams.get('token');
+  const rawToken = urlParams.get('token') || hashParams.get('token');
+
+  // 1. Password Reset Route (Single-use & 10m expiry)
+  const isResetRoute =
+    !forceLogin &&
+    (pathname.startsWith('/reset-password') ||
+      urlParams.get('reset') === 'true' ||
+      Boolean(rawToken && rawToken.startsWith('rst_')));
+
+  if (isResetRoute) {
+    return (
+      <ResetPasswordPage
+        initialToken={rawToken || ''}
+        onGoToLogin={() => {
+          window.history.replaceState({}, document.title, '/');
+          setPathname('/');
+          setForceLogin(true);
+        }}
+      />
+    );
+  }
+
+  // 2. Account Activation Route (Single-use & 48h expiry)
   const isActivateRoute =
     !forceLogin &&
-    (window.location.pathname.startsWith('/activate') ||
-      Boolean(activationToken) ||
-      urlParams.get('activate') === 'true');
+    (pathname.startsWith('/activate') ||
+      urlParams.get('activate') === 'true' ||
+      Boolean(rawToken && !rawToken.startsWith('rst_')));
 
   if (isActivateRoute) {
     return (
       <ActivateAccountPage
-        token={activationToken || ''}
+        token={rawToken || ''}
         onGoToLogin={() => {
           window.history.replaceState({}, document.title, '/');
+          setPathname('/');
           setForceLogin(true);
         }}
       />

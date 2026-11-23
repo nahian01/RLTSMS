@@ -843,6 +843,203 @@ test('Employee Onboarding: Token Verification, Password Setup, Account Activatio
   });
   assert.strictEqual(secondVerify.status, 200);
   assert.strictEqual(secondVerify.data.alreadyActive, true, 'Subsequent verify must recognize already active account');
+
+  // 6. Attempting to activate with the consumed token must be strictly rejected
+  const reActivateRes = await apiRequest('/api/auth/activate', {
+    method: 'POST',
+    body: { token, password: 'AnotherPassword@2026' },
+  });
+  assert.strictEqual(reActivateRes.status, 400, 'Re-activation with consumed token must return 400');
+  assert.ok(
+    reActivateRes.data.error.includes('already been used') || reActivateRes.data.error.includes('consumed'),
+    'Must return clear already used / consumed error message'
+  );
+});
+
+test('Onboarding Security: Expired invitation link (>48 hours) is rejected and cannot be activated', async () => {
+  // Create an employee with an expired invitation (sent 50 hours ago)
+  const expiredToken = `act_expired_${Date.now()}`;
+  const now = Date.now();
+  const pastSent = new Date(now - 50 * 60 * 60 * 1000).toISOString();
+  const pastExpiry = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+
+  dbStore.mutate((s) => {
+    s.users.push({
+      id: `usr-expired-${Date.now()}`,
+      name: 'Expired Test User',
+      email: 'expired.user@riseuplabs.com',
+      roles: ['Employee'],
+      accountStatus: 'Pending Invitation',
+      invitationToken: expiredToken,
+      invitationSentAt: pastSent,
+      invitationExpiresAt: pastExpiry,
+    });
+  });
+
+  // Verify token must reject as expired
+  const verifyRes = await apiRequest(`/api/auth/verify-token?token=${encodeURIComponent(expiredToken)}`, {
+    method: 'GET',
+  });
+  assert.strictEqual(verifyRes.status, 400, 'Expired invitation token must return 400');
+  assert.strictEqual(verifyRes.data.valid, false);
+  assert.strictEqual(verifyRes.data.expired, true);
+  assert.ok(verifyRes.data.error.includes('expired'), 'Must indicate expired 48h window');
+
+  // Attempting activation must also be blocked
+  const activateRes = await apiRequest('/api/auth/activate', {
+    method: 'POST',
+    body: { token: expiredToken, password: 'SecurePassword@2026' },
+  });
+  assert.strictEqual(activateRes.status, 400, 'Activating with expired token must return 400');
+  assert.ok(activateRes.data.error.includes('expired'), 'Must reject due to expiration');
+});
+
+test('Password Recovery: Forgot-password requests issue 10-minute OTP and reset link', async () => {
+  const targetEmail = 'wasiur@riseuplabs.com';
+
+  const forgotRes = await apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: targetEmail },
+  });
+
+  assert.strictEqual(forgotRes.status, 200);
+  assert.strictEqual(forgotRes.data.success, true);
+  assert.ok(
+    forgotRes.data.message.includes('10-minute security OTP') || forgotRes.data.message.includes('password reset'),
+    'Must return safe confirmation message'
+  );
+
+  // Verify email log in database store
+  const state = dbStore.getState();
+  const resetEmailLog = state.emailLogs.find(
+    (e) => e.to === targetEmail && e.subject.includes('Reset your Riseup Labs account password')
+  );
+  assert.ok(resetEmailLog, 'Must record password reset email log');
+  assert.ok(resetEmailLog.body.includes('10 minutes'), 'Email must mention 10-minute expiry');
+
+  // Extract OTP code and token from audit log or email body
+  const auditLog = state.auditLogs.find(
+    (a) => a.action === 'Password Reset Requested' && a.entityId === 'usr-4'
+  );
+  assert.ok(auditLog, 'Must record audit log for password reset request');
+  const otpMatch = auditLog.details.match(/\((\d{6})\)/);
+  assert.ok(otpMatch, 'Audit log must record generated 6-digit OTP');
+  const otpCode = otpMatch[1];
+  assert.strictEqual(otpCode.length, 6, 'OTP must be 6 digits');
+
+  // Extract reset token from email body link
+  const tokenMatch = resetEmailLog.body.match(/Token:\s*([a-zA-Z0-9_-]+)/i);
+  assert.ok(tokenMatch, 'Must include reset token in email log');
+  const resetToken = tokenMatch[1];
+
+  // 1. Verify reset token succeeds while within 10-minute window
+  const verifyTokenRes = await apiRequest(`/api/auth/verify-reset-token?token=${encodeURIComponent(resetToken)}`, {
+    method: 'GET',
+  });
+  assert.strictEqual(verifyTokenRes.status, 200);
+  assert.strictEqual(verifyTokenRes.data.valid, true);
+  assert.strictEqual(verifyTokenRes.data.user.email, targetEmail);
+
+  // 2. Reject short passwords (< 8 characters)
+  const shortPassRes = await apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { token: resetToken, newPassword: 'short' },
+  });
+  assert.strictEqual(shortPassRes.status, 400);
+  assert.ok(shortPassRes.data.error.includes('8 characters'));
+
+  // 3. Reset password using valid reset token
+  const newPassword = 'WasiurNewPass@2026!';
+  const resetSuccessRes = await apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { token: resetToken, newPassword },
+  });
+  assert.strictEqual(resetSuccessRes.status, 200);
+  assert.strictEqual(resetSuccessRes.data.success, true);
+
+  // 4. Single-Use Invalidation: Verify subsequent visit to same reset link is flagged as ALREADY USED
+  const usedVerifyRes = await apiRequest(`/api/auth/verify-reset-token?token=${encodeURIComponent(resetToken)}`, {
+    method: 'GET',
+  });
+  assert.strictEqual(usedVerifyRes.status, 200);
+  assert.strictEqual(usedVerifyRes.data.valid, false);
+  assert.strictEqual(usedVerifyRes.data.alreadyUsed, true, 'Consumed reset token must be marked alreadyUsed');
+  assert.ok(usedVerifyRes.data.error.includes('already been used'));
+
+  // 5. Single-Use Invalidation: Attempting to reset password again with same token is BLOCKED
+  const reResetRes = await apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { token: resetToken, newPassword: 'AnotherPassword@2026' },
+  });
+  assert.strictEqual(reResetRes.status, 400);
+  assert.ok(
+    reResetRes.data.error.includes('already been used'),
+    'Must reject reusing a consumed reset token'
+  );
+
+  // 6. User can sign in with new password; old password fails
+  const oldLoginRes = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: { email: targetEmail, password: 'RiseupLabs@2026' },
+  });
+  assert.strictEqual(oldLoginRes.status, 401, 'Old password must no longer work');
+
+  const newLoginRes = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: { email: targetEmail, password: newPassword },
+  });
+  assert.strictEqual(newLoginRes.status, 200, 'New password must log in successfully');
+  assert.strictEqual(newLoginRes.data.user.email, targetEmail);
+});
+
+test('Password Recovery: Reset via 6-digit OTP works and enforces single-use', async () => {
+  const targetEmail = 'sarah.lin@riseuplabs.com';
+
+  await apiRequest('/api/auth/forgot-password', {
+    method: 'POST',
+    body: { email: targetEmail },
+  });
+
+  const state = dbStore.getState();
+  const auditLog = state.auditLogs.find(
+    (a) => a.action === 'Password Reset Requested' && a.entityId === 'usr-1'
+  );
+  assert.ok(auditLog);
+  const otpMatch = auditLog.details.match(/\((\d{6})\)/);
+  assert.ok(otpMatch);
+  const otpCode = otpMatch[1];
+
+  // 1. Reject incorrect OTP
+  const badOtpRes = await apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { email: targetEmail, otp: '000000', newPassword: 'ValidNewPassword@2026' },
+  });
+  assert.strictEqual(badOtpRes.status, 400);
+
+  // 2. Succeed with correct 6-digit OTP
+  const freshPass = 'SarahSuperSecure@2026!';
+  const goodOtpRes = await apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { email: targetEmail, otp: otpCode, newPassword: freshPass },
+  });
+  assert.strictEqual(goodOtpRes.status, 200);
+  assert.strictEqual(goodOtpRes.data.success, true);
+
+  // 3. Single-Use Invalidation: Re-submitting the same OTP must be rejected
+  const reOtpRes = await apiRequest('/api/auth/reset-password', {
+    method: 'POST',
+    body: { email: targetEmail, otp: otpCode, newPassword: 'AnotherPassword@999' },
+  });
+  assert.strictEqual(reOtpRes.status, 400);
+  assert.ok(reOtpRes.data.error.includes('already been used'));
+
+  // 4. Verify login with fresh password
+  const loginRes = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: { email: targetEmail, password: freshPass },
+  });
+  assert.strictEqual(loginRes.status, 200);
+  assert.strictEqual(loginRes.data.user.email, targetEmail);
 });
 
 test('Teardown RLTSMS Test Server', async () => {
