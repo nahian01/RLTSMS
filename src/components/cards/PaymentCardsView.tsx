@@ -125,6 +125,15 @@ export const PaymentCardsView: React.FC = () => {
     return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.departmentName.toLowerCase().includes(q);
   });
 
+  const isSuperAdmin = currentUser.roles.includes('Super Admin');
+  const visibleCards = cards.filter((card) => {
+    const isOwner = card.ownerId === currentUser.id;
+    const isAuthorized = card.authorizedUserIds.includes(currentUser.id);
+    if (isOwner || isAuthorized) return true;
+    if (isSuperAdmin) return true;
+    return false;
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* Secure Area Shield Banner */}
@@ -158,153 +167,174 @@ export const PaymentCardsView: React.FC = () => {
       </div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {cards.map((card) => {
-          const isOwner = card.ownerId === currentUser.id;
-          const isAuthorized = canViewCardDetails(card.id);
-          const cardInfo = getCardMaskedInfo(card.id);
-          const isCurrentlyRevealed = Boolean(cardInfo.isRevealed);
-          const timeRemaining = cardInfo.secondsRemaining || 0;
-          const authorizedUsersCount = card.authorizedUserIds.length;
+      {visibleCards.length === 0 ? (
+        <div className="p-8 text-center bg-white dark:bg-[#211E1F] rounded-2xl border border-slate-200 dark:border-[#2D292A] space-y-3">
+          <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-[#2A2627] flex items-center justify-center text-slate-400">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+            No Accessible Payment Cards
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Under Riseup Labs zero-trust card governance, payment cards are only visible to their registered owners or users explicitly granted viewing permission.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {visibleCards.map((card) => {
+            const isOwner = card.ownerId === currentUser.id;
+            const isAuthorized = canViewCardDetails(card.id);
+            const cardInfo = getCardMaskedInfo(card.id);
+            const isCurrentlyRevealed = Boolean(cardInfo.isRevealed);
+            const timeRemaining = cardInfo.secondsRemaining || 0;
+            const authorizedUsersCount = card.authorizedUserIds.length;
 
-          return (
-            <div
-              key={card.id}
-              className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
-                isAuthorized
-                  ? 'bg-white dark:bg-[#211E1F] border-slate-200 dark:border-[#2D292A] shadow-2xs'
-                  : 'bg-slate-50 dark:bg-[#1A1718] border-slate-200/80 dark:border-[#2D292A] opacity-90'
-              }`}
-            >
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] font-mono font-semibold uppercase text-slate-400">
-                      {card.currency} · {card.network}
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
-                      {card.cardName}
-                    </h3>
-                    <div className="text-[11px] text-[#EA5400] font-medium mt-0.5">
-                      Owner: {card.ownerName || 'David Vance'}
-                    </div>
-                  </div>
-
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                      isOwner
-                        ? 'bg-[#FFF1EB] text-[#EA5400] dark:bg-[#EA5400]/20 dark:text-[#EA5400] border border-[#EA5400]/30'
-                        : isAuthorized
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200'
-                        : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                    }`}
-                  >
-                    {isOwner ? 'Owner' : isAuthorized ? 'Authorized' : 'Restricted'}
-                  </span>
-                </div>
-
-                {/* Card visual mask representation */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-[#211E1F] to-[#121011] text-white space-y-3 shadow-inner border border-[#2D292A]">
-                  <div className="flex justify-between items-center text-[10px] text-slate-400">
-                    <span>{card.bankName}</span>
-                    <span className="font-bold text-[#EA5400]">{card.network}</span>
-                  </div>
-
-                  {/* Masked vs Revealed number representation */}
-                  <div className="font-mono tracking-widest text-sm text-center py-2">
-                    {isCurrentlyRevealed ? (
-                      <div className="space-y-1">
-                        <span className="tabular-nums font-bold text-emerald-400 text-base">
-                          •••• •••• •••• {card.lastFour}
-                        </span>
-                        <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-300 font-sans tracking-normal">
-                          <Timer className="w-3 h-3 animate-spin" />
-                          <span>Auto-masking in {timeRemaining}s</span>
-                        </div>
+            return (
+              <div
+                key={card.id}
+                className={`p-5 rounded-2xl border flex flex-col justify-between transition-all ${
+                  isAuthorized
+                    ? 'bg-white dark:bg-[#211E1F] border-slate-200 dark:border-[#2D292A] shadow-2xs'
+                    : 'bg-slate-50 dark:bg-[#1A1718] border-slate-200/80 dark:border-[#2D292A] opacity-90'
+                }`}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] font-mono font-semibold uppercase text-slate-400">
+                        {card.currency} · {card.network}
+                      </span>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                        {card.cardName}
+                      </h3>
+                      <div className="text-[11px] text-[#EA5400] font-medium mt-0.5">
+                        Owner: {card.ownerName || 'David Vance'}
                       </div>
-                    ) : isAuthorized ? (
-                      <span className="tabular-nums font-bold text-slate-400">
-                        •••• •••• •••• ••••
-                      </span>
-                    ) : (
-                      <span className="text-slate-500 font-semibold tracking-normal text-xs flex items-center justify-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-amber-400" />
-                        Restricted Card Details
-                      </span>
-                    )}
+                    </div>
+
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                        isOwner
+                          ? 'bg-[#FFF1EB] text-[#EA5400] dark:bg-[#EA5400]/20 dark:text-[#EA5400] border border-[#EA5400]/30'
+                          : isAuthorized
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/60'
+                      }`}
+                    >
+                      {isOwner ? 'Owner' : isAuthorized ? 'Authorized' : 'Availability Only'}
+                    </span>
                   </div>
 
-                  <div className="flex justify-between items-end text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                    <div>
-                      <span className="block text-[8px] uppercase">Holder</span>
-                      <span className="text-slate-200">
-                        {isAuthorized ? card.holderName : 'Company Cardholder'}
-                      </span>
+                  {/* Card visual mask representation */}
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-[#211E1F] to-[#121011] text-white space-y-3 shadow-inner border border-[#2D292A]">
+                    <div className="flex justify-between items-center text-[10px] text-slate-400">
+                      <span>{card.bankName}</span>
+                      <span className="font-bold text-[#EA5400]">{card.network}</span>
                     </div>
-                    <div>
-                      <span className="block text-[8px] uppercase">Expires</span>
-                      <span className="text-slate-200 font-mono">
-                        {isCurrentlyRevealed
-                          ? `${card.expiryMonth}/${card.expiryYear.slice(-2)}`
-                          : '••/••'}
-                      </span>
+
+                    {/* Masked vs Revealed number representation */}
+                    <div className="font-mono tracking-widest text-sm text-center py-2">
+                      {isCurrentlyRevealed ? (
+                        <div className="space-y-1">
+                          <span className="tabular-nums font-bold text-emerald-400 text-base">
+                            •••• •••• •••• {card.lastFour}
+                          </span>
+                          <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-300 font-sans tracking-normal">
+                            <Timer className="w-3 h-3 animate-spin" />
+                            <span>Auto-masking in {timeRemaining}s</span>
+                          </div>
+                        </div>
+                      ) : isAuthorized ? (
+                        <span className="tabular-nums font-bold text-slate-400">
+                          •••• •••• •••• ••••
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-semibold tracking-normal text-xs flex items-center justify-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-amber-500" />
+                          Card Active · Details Protected
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-end text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                      <div>
+                        <span className="block text-[8px] uppercase">Holder</span>
+                        <span className="text-slate-200">
+                          {isAuthorized ? card.holderName : 'Restricted (Owner Controlled)'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[8px] uppercase">Expires</span>
+                        <span className="text-slate-200 font-mono">
+                          {isCurrentlyRevealed
+                            ? `${card.expiryMonth}/${card.expiryYear.slice(-2)}`
+                            : '••/••'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status & Viewers Count */}
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                      <span>Authorized Viewers:</span>
+                      <strong className="text-slate-700 dark:text-slate-300">
+                        {authorizedUsersCount} user(s)
+                      </strong>
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Card Status: <strong className="text-emerald-600">{card.status}</strong>
                     </div>
                   </div>
                 </div>
 
-                {/* Status & Viewers Count */}
-                <div className="text-xs space-y-1">
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                    <span>Authorized Viewers:</span>
-                    <strong className="text-slate-700 dark:text-slate-300">
-                      {authorizedUsersCount} user(s)
-                    </strong>
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    Card Status: <strong className="text-emerald-600">{card.status}</strong>
-                  </div>
+                {/* Action Buttons: Password Reveal & Owner Visibility Management */}
+                <div className="pt-4 mt-4 border-t border-slate-100 dark:border-[#2D292A] flex items-center justify-between gap-2">
+                  {/* Reveal Card Info button (Only if user has view permission: owner or authorized) */}
+                  {isAuthorized ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRevealTargetCard(card);
+                        setVerifyPasswordInput('');
+                        setPasswordError('');
+                      }}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        isCurrentlyRevealed
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-[#FFF1EB] text-[#EA5400] hover:bg-[#FFE4D6] dark:bg-[#EA5400]/20 dark:text-[#EA5400]'
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{isCurrentlyRevealed ? `Revealed (${timeRemaining}s)` : 'Reveal Details'}</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 italic flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-amber-500 shrink-0" />
+                      Availability Only (Controlled by Owner)
+                    </span>
+                  )}
+
+                  {/* Card Owner Visibility Management button */}
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCardForPerms(card)}
+                      className="px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#2A2627] hover:bg-slate-200 dark:hover:bg-[#332F30] rounded-lg transition-colors cursor-pointer"
+                    >
+                      Manage Viewers ({authorizedUsersCount})
+                    </button>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 italic">
+                      Controlled by Owner
+                    </span>
+                  )}
                 </div>
               </div>
-
-              {/* Action Buttons: Password Reveal & Owner Visibility Management */}
-              <div className="pt-4 mt-4 border-t border-slate-100 dark:border-[#2D292A] flex items-center justify-between gap-2">
-                {/* Reveal Card Info button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRevealTargetCard(card);
-                    setVerifyPasswordInput('');
-                    setPasswordError('');
-                  }}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
-                    isCurrentlyRevealed
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                      : 'bg-[#FFF1EB] text-[#EA5400] hover:bg-[#FFE4D6] dark:bg-[#EA5400]/20 dark:text-[#EA5400]'
-                  }`}
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>{isCurrentlyRevealed ? `Revealed (${timeRemaining}s)` : 'Reveal Details'}</span>
-                </button>
-
-                {/* Card Owner Visibility Management button */}
-                {isOwner ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCardForPerms(card)}
-                    className="px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#2A2627] hover:bg-slate-200 dark:hover:bg-[#332F30] rounded-lg transition-colors cursor-pointer"
-                  >
-                    Manage Viewers ({authorizedUsersCount})
-                  </button>
-                ) : (
-                  <span className="text-[10px] text-slate-400 italic">
-                    Controlled by Owner
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Access Audit Trail (Part 9.6) */}
       <div className="p-5 bg-white dark:bg-[#211E1F] rounded-2xl border border-slate-200 dark:border-[#2D292A] shadow-2xs space-y-4">
@@ -396,9 +426,6 @@ export const PaymentCardsView: React.FC = () => {
                   onChange={(e) => setVerifyPasswordInput(e.target.value)}
                   className="w-full p-2.5 rounded-lg border border-slate-300 dark:border-[#2D292A] bg-white dark:bg-[#1A1718] text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-[#EA5400]"
                 />
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  (Default corporate test password: <code>RiseupLabs@2026</code>)
-                </span>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-[#2D292A]">

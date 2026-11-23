@@ -63,6 +63,7 @@ export const RequisitionDetailModal: React.FC<RequisitionDetailModalProps> = ({
     setActiveAction(null);
     setComment('');
     setActionError('');
+    onClose();
   };
 
   return (

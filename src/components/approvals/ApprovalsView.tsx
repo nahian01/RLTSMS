@@ -11,15 +11,18 @@ import {
   UserCheck,
   ChevronRight,
   MessageSquare,
+  Eye,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Requisition, ApprovalStageAction } from '../../types';
+import { RequisitionDetailModal } from '../requisitions/RequisitionDetailModal';
 
 export const ApprovalsView: React.FC = () => {
   const { requisitions, currentUser, approveStage, rejectStage, returnForModification, setCurrentView } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReq, setSelectedReq] = useState<Requisition | null>(null);
+  const [selectedDetailReq, setSelectedDetailReq] = useState<Requisition | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'return' | null>(null);
   const [actionComment, setActionComment] = useState('');
   const [actionError, setActionError] = useState('');
@@ -151,18 +154,28 @@ export const ApprovalsView: React.FC = () => {
                       }`}
                     >
                       <td className="py-3 px-4">
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDetailReq(req)}
+                          className="font-mono font-bold text-slate-900 dark:text-white hover:text-[#EA5400] transition-colors cursor-pointer text-left block"
+                          title="Click to view full details"
+                        >
                           {req.requisitionNumber}
-                        </span>
+                        </button>
                         <div className="text-[10px] text-slate-400">
                           {new Date(req.createdAt).toLocaleDateString()}
                         </div>
                       </td>
 
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900 dark:text-white">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDetailReq(req)}
+                          className="font-semibold text-slate-900 dark:text-white hover:text-[#EA5400] transition-colors cursor-pointer text-left block"
+                          title="Click to view full details"
+                        >
                           {req.serviceName}
-                        </div>
+                        </button>
                         <div className="text-[10px] text-slate-400">
                           {req.requestedPlan} · {req.billingCycle}
                         </div>
@@ -211,7 +224,16 @@ export const ApprovalsView: React.FC = () => {
 
                       <td className="py-3 px-4 text-center">
                         {isActionable ? (
-                          <div className="flex items-center justify-center gap-1.5">
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDetailReq(req)}
+                              className="px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#2A2627] hover:bg-slate-200 dark:hover:bg-[#332F30] rounded-md transition-colors cursor-pointer inline-flex items-center gap-1 border border-slate-200 dark:border-[#383334]"
+                              title="View full requisition details, justification, and attachments"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#EA5400]" />
+                              <span>View Details</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -244,9 +266,20 @@ export const ApprovalsView: React.FC = () => {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-slate-400 italic">
-                            Awaiting {currentStage?.roleOrPosition}
-                          </span>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedDetailReq(req)}
+                              className="px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer inline-flex items-center gap-1"
+                              title="View requisition details"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#EA5400]" />
+                              <span>View Details</span>
+                            </button>
+                            <span className="text-[11px] text-slate-400 italic">
+                              Awaiting {currentStage?.roleOrPosition}
+                            </span>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -329,6 +362,12 @@ export const ApprovalsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Full Requisition Detail Modal */}
+      <RequisitionDetailModal
+        requisition={selectedDetailReq}
+        onClose={() => setSelectedDetailReq(null)}
+      />
     </div>
   );
 };

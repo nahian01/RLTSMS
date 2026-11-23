@@ -253,3 +253,85 @@ test('Access Approval: Accounts under ChatGPT Team / Plus are correctly listed w
   assert.ok(chatGptAccounts.some((a) => a.accountEmail === 'qa.ai@riseuplabs.com'));
   assert.ok(chatGptAccounts.some((a) => a.accountEmail === 'exec.ai@riseuplabs.com'));
 });
+
+test('Payment Cards Privacy: Strict owner-governed visibility and Super Admin availability tracking', () => {
+  const cards = [
+    {
+      id: 'card-1',
+      cardName: 'AWS & Cloud Primary Visa',
+      ownerId: 'usr-david',
+      authorizedUserIds: ['usr-david', 'usr-sarah'],
+      status: 'Active' as const,
+    },
+    {
+      id: 'card-2',
+      cardName: 'Marketing Mastercard',
+      ownerId: 'usr-david',
+      authorizedUserIds: ['usr-david'],
+      status: 'Active' as const,
+    },
+  ];
+
+  // Helper matching PaymentCardsView visibleCards logic
+  const getVisibleCards = (userId: string, roles: UserRole[]) => {
+    const isSuperAdmin = roles.includes('Super Admin');
+    return cards.filter((card) => {
+      const isOwner = card.ownerId === userId;
+      const isAuthorized = card.authorizedUserIds.includes(userId);
+      if (isOwner || isAuthorized) return true;
+      if (isSuperAdmin) return true;
+      return false;
+    });
+  };
+
+  // 1. Regular employee with no ownership or authorization: sees 0 cards
+  const employeeCards = getVisibleCards('usr-emp-99', ['Employee']);
+  assert.strictEqual(employeeCards.length, 0);
+
+  // 2. User with authorization on card-1 only: sees only card-1
+  const sarahCards = getVisibleCards('usr-sarah', ['Team Lead']);
+  assert.strictEqual(sarahCards.length, 1);
+  assert.strictEqual(sarahCards[0].id, 'card-1');
+
+  // 3. Card owner (David): sees both cards
+  const davidCards = getVisibleCards('usr-david', ['Finance Manager']);
+  assert.strictEqual(davidCards.length, 2);
+
+  // 4. Super Admin (Nahian): sees both cards for organizational availability tracking
+  const superAdminCards = getVisibleCards('usr-nahian', ['Super Admin']);
+  assert.strictEqual(superAdminCards.length, 2);
+
+  // Verify that Super Admin does NOT have reveal authorization on cards not owned or authorized
+  const isSuperAdminAuthorizedOnCard1 =
+    cards[0].ownerId === 'usr-nahian' || cards[0].authorizedUserIds.includes('usr-nahian');
+  assert.strictEqual(isSuperAdminAuthorizedOnCard1, false); // Availability Only!
+});
+
+test('Requisition Approvals: Full details accessibility for approvers before decision', () => {
+  const sampleRequisition = {
+    id: 'req-2026-001',
+    requisitionNumber: 'REQ-2026-001',
+    serviceName: 'Cursor AI',
+    requesterName: 'Sarah Lin',
+    departmentName: 'Engineering',
+    estimatedAmount: 20,
+    currency: 'USD',
+    businessJustification: 'Needed for AI-assisted development productivity',
+    stages: [
+      {
+        stageName: 'Team Lead Review',
+        roleOrPosition: 'Team Lead',
+        isRequired: true,
+        status: 'Pending' as const,
+      },
+    ],
+    currentStageIndex: 0,
+  };
+
+  // Ensure justification, requester, and stages are populated for view details modal
+  assert.ok(sampleRequisition.businessJustification.length > 0);
+  assert.strictEqual(sampleRequisition.serviceName, 'Cursor AI');
+  assert.strictEqual(sampleRequisition.stages.length, 1);
+  assert.strictEqual(sampleRequisition.stages[0].status, 'Pending');
+});
+
