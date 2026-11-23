@@ -108,7 +108,17 @@ export interface ServerState {
 }
 
 const DATA_DIR = path.join(import.meta.dirname, '..', 'data');
-const STORE_PATH = path.join(DATA_DIR, 'store.json');
+const EXAMPLE_STORE_PATH = path.join(DATA_DIR, 'store.example.json');
+
+export function getStorePath(): string {
+  if (process.env.RLTSMS_STORE_PATH) {
+    return process.env.RLTSMS_STORE_PATH;
+  }
+  if (process.env.NODE_ENV === 'test') {
+    return path.join(DATA_DIR, 'store.test.json');
+  }
+  return path.join(DATA_DIR, 'store.json');
+}
 
 const DEFAULT_PASS_HASH = hashPassword('RiseupLabs@2026', 'riseuplabs_salt_2026');
 
@@ -162,14 +172,15 @@ class Store {
   }
 
   private load(): ServerState {
+    const storePath = getStorePath();
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
-      if (fs.existsSync(STORE_PATH)) {
-        const raw = fs.readFileSync(STORE_PATH, 'utf8');
+      if (fs.existsSync(storePath)) {
+        const raw = fs.readFileSync(storePath, 'utf8');
         const parsed = JSON.parse(raw);
-        // Ensure new entities are populated if missing in legacy store.json
+        // Ensure new entities are populated if missing in legacy store
         if (!parsed.predefinedReasons || parsed.predefinedReasons.length === 0) {
           parsed.predefinedReasons = INITIAL_PREDEFINED_REASONS;
         }
@@ -182,7 +193,7 @@ class Store {
         if (!parsed.permissions) {
           parsed.permissions = INITIAL_PERMISSIONS;
         }
-        if (!parsed.users || parsed.users.length !== 5) {
+        if (!parsed.users || parsed.users.length === 0) {
           parsed.users = INITIAL_USERS.map((u) => ({
             ...u,
             passwordHash: DEFAULT_PASS_HASH,
@@ -190,8 +201,16 @@ class Store {
         }
         return parsed;
       }
+
+      // If storePath does not exist on disk, check if seed example exists
+      if (fs.existsSync(EXAMPLE_STORE_PATH) && storePath.endsWith('store.json')) {
+        const raw = fs.readFileSync(EXAMPLE_STORE_PATH, 'utf8');
+        const parsed = JSON.parse(raw);
+        fs.writeFileSync(storePath, raw, 'utf8');
+        return parsed;
+      }
     } catch (e: any) {
-      console.warn('[Store] Could not read store.json, creating initial state.', e.message);
+      console.warn('[Store] Could not read store, creating initial state.', e.message);
     }
     const def = createDefaultState();
     this.persist(def);
@@ -213,8 +232,9 @@ class Store {
   }
 
   private persist(data: ServerState): void {
+    const storePath = getStorePath();
     try {
-      fs.writeFileSync(STORE_PATH, JSON.stringify(data, null, 2), 'utf8');
+      fs.writeFileSync(storePath, JSON.stringify(data, null, 2), 'utf8');
     } catch (err) {
       console.error('[Store] Failed to persist store to disk', err);
     }

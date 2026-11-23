@@ -1,5 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+
+// Force test environment and isolated test store so live database is NEVER touched
+process.env.NODE_ENV = 'test';
+process.env.RLTSMS_STORE_PATH = path.join(import.meta.dirname, '..', 'server', 'data', 'store.test.json');
+
 import app, { startServer } from '../server/index';
 import { dbStore, verifyPassword, hashPassword } from '../server/data/store';
 import http from 'http';
@@ -829,5 +836,12 @@ test('Teardown RLTSMS Test Server', async () => {
   await new Promise<void>((resolve) => {
     server.close(() => resolve());
   });
-  assert.ok(true, 'Server closed cleanly');
+  // Clean up isolated test store so tests leave zero database residue
+  const testStorePath = process.env.RLTSMS_STORE_PATH;
+  if (testStorePath && fs.existsSync(testStorePath)) {
+    try {
+      fs.unlinkSync(testStorePath);
+    } catch {}
+  }
+  assert.ok(true, 'Server closed cleanly and test store cleaned up');
 });

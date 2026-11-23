@@ -5,3 +5,13 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local database and persistent state stores (Never push database to production)
+server/data/store.json
+server/data/store.*.json
+!server/data/store.example.json
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
