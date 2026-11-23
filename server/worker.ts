@@ -422,7 +422,9 @@ export default {
           phone?: string;
           designation?: string;
           departmentId?: string;
+          departmentName?: string;
           teamId?: string;
+          teamName?: string;
           reportingLeadId?: string;
           roles?: string[];
         };
@@ -443,9 +445,9 @@ export default {
           phone: body.phone || '+880 1710-000000',
           designation: body.designation || 'Software Engineer',
           departmentId: body.departmentId || 'dept-eng',
-          departmentName: 'Engineering & Development',
+          departmentName: body.departmentName || (body.departmentId ? 'Engineering & Development' : 'Unassigned'),
           teamId: body.teamId,
-          teamName: 'Core Platform',
+          teamName: body.teamName || (body.teamId ? 'Core Platform' : undefined),
           reportingLeadId: body.reportingLeadId,
           roles: body.roles && body.roles.length > 0 ? body.roles : ['Employee'],
           accountStatus: 'Pending Invitation',

@@ -44,9 +44,9 @@ export const RequestToolsView: React.FC = () => {
     );
   }, [accessRequests, currentUser]);
 
-  // Approved requests (approved status)
+  // Approved requests (approved status or fulfilled status)
   const approvedRequests = useMemo(() => {
-    return myRequests.filter((r) => r.status === 'Approved');
+    return myRequests.filter((r) => r.status === 'Approved' || r.status === 'Fulfilled');
   }, [myRequests]);
 
   // Pending requests (in progress)
@@ -279,7 +279,7 @@ export const RequestToolsView: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayedRequests.map((req) => {
-            const isApproved = req.status === 'Approved';
+            const isApproved = req.status === 'Approved' || req.status === 'Fulfilled';
             const isPending = req.status === 'Pending Approval' || req.status === 'Under Review' || req.status === 'Pending';
             const serviceObj = services.find((s) => s.id === req.serviceId);
 
@@ -287,6 +287,7 @@ export const RequestToolsView: React.FC = () => {
             const matchingAssignment = myDirectAssignments.find(
               (a) => a.serviceId === req.serviceId
             );
+            const assignedEmail = matchingAssignment?.accountEmail || req.assignedAccountEmail;
 
             return (
               <div
@@ -342,11 +343,11 @@ export const RequestToolsView: React.FC = () => {
                           {req.duration}
                         </span>
                       </div>
-                      {matchingAssignment && (
+                      {assignedEmail && (
                         <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
                           <span className="text-slate-500 dark:text-slate-400">Assigned Account:</span>
                           <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                            {matchingAssignment.accountEmail}
+                            {assignedEmail}
                           </span>
                         </div>
                       )}

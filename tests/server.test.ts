@@ -464,8 +464,8 @@ test('Employee Management: Add User, Invitation Token & Status Toggle', async ()
       email: 'nafis.sadik@riseuplabs.com',
       phone: '+880 1711-223344',
       designation: 'Senior DevOps Engineer',
-      departmentId: 'dept-eng',
-      teamId: 'team-mobile',
+      departmentId: 'dept-1',
+      teamId: 'team-2',
       reportingLeadId: 'usr-3',
       roles: ['Employee', 'Team Lead'],
     },
@@ -473,6 +473,8 @@ test('Employee Management: Add User, Invitation Token & Status Toggle', async ()
 
   assert.strictEqual(addRes.status, 201, 'Adding new employee must succeed');
   assert.strictEqual(addRes.data.name, 'Nafis Sadik');
+  assert.strictEqual(addRes.data.departmentName, 'Engineering');
+  assert.strictEqual(addRes.data.teamName, 'Mobile Apps Team');
   assert.strictEqual(addRes.data.accountStatus, 'Pending Invitation');
   assert.ok(addRes.data.invitationExpiresAt, 'Must set 48h activation expiry');
 

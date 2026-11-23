@@ -127,21 +127,42 @@ test('Request Service/Tools Module: Employee can submit access request with tool
   assert.strictEqual(requestPayload.status, 'Pending Approval');
 });
 
-test('Request Service/Tools Module: Scoped to employee approved requests list', () => {
+test('Request Service/Tools Module: Scoped to employee approved requests list (Approved & Fulfilled)', () => {
   const allRequests = [
     { id: 'req-1', requesterId: 'usr-5', serviceName: 'BrowserStack', status: 'Approved' },
     { id: 'req-2', requesterId: 'usr-5', serviceName: 'ChatGPT Plus', status: 'Pending Approval' },
     { id: 'req-3', requesterId: 'usr-other', serviceName: 'AWS Pro', status: 'Approved' },
+    { id: 'req-4', requesterId: 'usr-5', serviceName: 'GitHub Copilot', status: 'Fulfilled' },
   ];
 
   // Employee only sees their own requests
   const myRequests = allRequests.filter((r) => r.requesterId === 'usr-5');
-  assert.strictEqual(myRequests.length, 2);
+  assert.strictEqual(myRequests.length, 3);
 
-  // Employee approved list strictly filters to approved requests
-  const myApprovedList = myRequests.filter((r) => r.status === 'Approved');
-  assert.strictEqual(myApprovedList.length, 1);
-  assert.strictEqual(myApprovedList[0].serviceName, 'BrowserStack');
+  // Employee approved list strictly filters to approved & fulfilled requests
+  const myApprovedList = myRequests.filter((r) => r.status === 'Approved' || r.status === 'Fulfilled');
+  assert.strictEqual(myApprovedList.length, 2);
+  assert.ok(myApprovedList.some((r) => r.serviceName === 'BrowserStack'));
+  assert.ok(myApprovedList.some((r) => r.serviceName === 'GitHub Copilot'));
+});
+
+test('Sidebar Approvals Visibility: Team Lead, Department Lead, Operation Manager can all access Approvals queue', () => {
+  const approvalPerms = ['approvals:team', 'approvals:department', 'approvals:operations', 'approvals:finance', 'access:approve'];
+
+  const checkCanAccessApprovals = (roles: UserRole[]) => {
+    return approvalPerms.some((perm) => checkUserPermission(roles, perm));
+  };
+
+  // Team Lead has approvals:team
+  assert.strictEqual(checkCanAccessApprovals(['Team Lead']), true);
+  // Department Lead has approvals:department
+  assert.strictEqual(checkCanAccessApprovals(['Department Lead']), true);
+  // Operation Manager has approvals:operations
+  assert.strictEqual(checkCanAccessApprovals(['Operation Manager']), true);
+  // Super Admin has wildcard *
+  assert.strictEqual(checkCanAccessApprovals(['Super Admin']), true);
+  // Standard Employee does NOT have approvals
+  assert.strictEqual(checkCanAccessApprovals(['Employee']), false);
 });
 
 test('User-Wise Notifications: Notifications are scoped to the individual recipient and not global', () => {

@@ -113,7 +113,13 @@ export const DashboardView: React.FC = () => {
     [requisitions]
   );
   const pendingAccessApprovals = useMemo(
-    () => accessRequests.filter((a) => a.status === 'Pending Approval'),
+    () =>
+      accessRequests.filter(
+        (a) =>
+          a.status === 'Pending Approval' ||
+          a.status === 'Pending' ||
+          a.status === 'Under Review'
+      ),
     [accessRequests]
   );
   const approvedPendingPurchase = useMemo(
@@ -139,7 +145,11 @@ export const DashboardView: React.FC = () => {
 
   const pendingAccessForMe = useMemo(() => {
     return accessRequests.filter((a) => {
-      if (a.status === 'Pending Approval') {
+      if (
+        a.status === 'Pending Approval' ||
+        a.status === 'Pending' ||
+        a.status === 'Under Review'
+      ) {
         const stage = a.stages[a.currentStageIndex];
         if (!stage) return false;
         if (stage.assignedApproverId === currentUser.id) return true;
@@ -237,18 +247,22 @@ export const DashboardView: React.FC = () => {
 
   // Employee-specific: tools assigned to me
   const myAssignedTools = useMemo(() => {
-    return accounts.filter((a) => a.assignedUserId === currentUser.id);
+    return accounts.filter(
+      (a) => a.assignedUserId === currentUser.id || a.sharedUserIds?.includes(currentUser.id)
+    );
   }, [accounts, currentUser.id]);
 
   const myAccessGrants = useMemo(() => {
     return accessAssignments.filter(
-      (a) => a.recipientId === currentUser.id || a.recipientEmail === currentUser.email
+      (a) =>
+        (a.recipientId === currentUser.id || a.recipientEmail?.toLowerCase() === currentUser.email.toLowerCase()) &&
+        a.status === 'Active'
     );
   }, [accessAssignments, currentUser]);
 
   const myAccessRequests = useMemo(() => {
     return accessRequests.filter(
-      (r) => r.requesterId === currentUser.id || r.requesterEmail === currentUser.email
+      (r) => r.requesterId === currentUser.id || r.requesterEmail.toLowerCase() === currentUser.email.toLowerCase()
     );
   }, [accessRequests, currentUser]);
 

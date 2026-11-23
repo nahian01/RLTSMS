@@ -13,7 +13,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onClose,
   onOpenNewRequisition,
 }) => {
-  const { services, requisitions, accessRequests, accounts, setCurrentView } = useApp();
+  const { services, requisitions, accessRequests, accounts, setCurrentView, hasPermission } = useApp();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -86,6 +86,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const navigationItems = [
     { label: 'Dashboard Overview', icon: ArrowRight, view: 'dashboard' },
+    { label: 'Request Service/Tools', icon: KeyRound, view: 'request-tools' },
     { label: 'Services & Tools Catalogue', icon: Package, view: 'services' },
     { label: 'Purchased Accounts & Licenses', icon: Users, view: 'accounts' },
     { label: 'Access Management (Zero-Credential)', icon: Users, view: 'access' },
@@ -230,7 +231,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 {matchingAccessRequests.map((acc) => (
                   <button
                     key={acc.id}
-                    onClick={() => handleSelectView('requisitions', acc.id)}
+                    onClick={() => handleSelectView(hasPermission('requisitions:view') ? 'requisitions' : 'request-tools', acc.id)}
                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5">

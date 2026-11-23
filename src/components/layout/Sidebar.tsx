@@ -37,8 +37,8 @@ interface SidebarMenuItem {
   badge?: number;
   badgeColor?: string;
   isProtected?: boolean;
-  /** If set, item is hidden when the user lacks this permission code */
-  requiredPermission?: string;
+  /** If set, item is hidden when the user lacks this permission code (or any of the codes if an array) */
+  requiredPermission?: string | string[];
 }
 
 interface SidebarSection {
@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
   const myApprovedToolsCount = accessRequests.filter(
     (r) =>
       (r.requesterId === currentUser?.id || r.requesterEmail?.toLowerCase() === currentUser?.email?.toLowerCase()) &&
-      r.status === 'Approved'
+      (r.status === 'Approved' || r.status === 'Fulfilled')
   ).length;
 
   // Exact 14-destination navigation per PRD & Transformation Spec (Part 4.1)
@@ -127,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
           icon: CheckCircle2,
           badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined,
           badgeColor: 'bg-[#EA5400]/20 text-[#EA5400] border border-[#EA5400]/40',
-          requiredPermission: 'approvals:team',
+          requiredPermission: ['approvals:team', 'approvals:department', 'approvals:operations', 'approvals:finance', 'access:approve'],
         },
         {
           id: 'procurement',
@@ -258,9 +258,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
         {/* Navigation Sections */}
         <div className="flex-1 overflow-y-auto py-3 px-3 space-y-5">
           {menuSections.map((section) => {
-            const visibleItems = section.items.filter(
-              (item) => !item.requiredPermission || hasPermission(item.requiredPermission)
-            );
+            const visibleItems = section.items.filter((item) => {
+              if (!item.requiredPermission) return true;
+              if (Array.isArray(item.requiredPermission)) {
+                return item.requiredPermission.some((p) => hasPermission(p));
+              }
+              return hasPermission(item.requiredPermission);
+            });
             if (visibleItems.length === 0) return null;
 
             return (

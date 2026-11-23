@@ -23,7 +23,7 @@ import { AccessRequestDetailModal } from './AccessRequestDetailModal';
 import { NewAccessRequestModal } from './NewAccessRequestModal';
 
 export const RequisitionsView: React.FC = () => {
-  const { requisitions, accessRequests, currentUser, selectedItemId } = useApp();
+  const { requisitions, accessRequests, currentUser, selectedItemId, hasPermission } = useApp();
 
   // Mode switcher: Purchase Requisitions vs Tool Access Sharing Requests
   const [viewMode, setViewMode] = useState<'purchases' | 'access'>('purchases');
@@ -100,7 +100,7 @@ export const RequisitionsView: React.FC = () => {
       return false;
     }
     if (activeTab === 'approvals') {
-      if (a.status !== 'Pending Approval') return false;
+      if (a.status !== 'Pending Approval' && a.status !== 'Pending' && a.status !== 'Under Review') return false;
       const stage = a.stages[a.currentStageIndex];
       const isAssigned =
         stage?.assignedApproverId === currentUser.id ||
@@ -262,21 +262,25 @@ export const RequisitionsView: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          <button
-            onClick={() => setIsNewAccessModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800 rounded-lg shadow-2xs transition-colors cursor-pointer"
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Request Tool Access</span>
-          </button>
+          {hasPermission('access:request') && (
+            <button
+              onClick={() => setIsNewAccessModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Request Tool Access</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setIsNewReqModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-lg shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Requisition</span>
-          </button>
+          {hasPermission('requisitions:submit') && (
+            <button
+              onClick={() => setIsNewReqModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-lg shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Requisition</span>
+            </button>
+          )}
         </div>
       </div>
 

@@ -48,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // Friendly title mapping for breadcrumbs
   const viewTitleMap: Record<string, string> = {
     dashboard: 'Dashboard Overview',
+    'request-tools': 'Request Service & Tools',
     services: 'Services & Tools Catalogue',
     accounts: 'Accounts & Licenses',
     access: 'Services & Tools Sharing Hub (Zero Credentials)',

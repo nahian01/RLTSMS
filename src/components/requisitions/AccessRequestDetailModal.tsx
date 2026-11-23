@@ -102,14 +102,16 @@ export const AccessRequestDetailModal: React.FC<AccessRequestDetailModalProps> =
   // Check if current user can act on this stage
   const currentStage = accessRequest.stages[accessRequest.currentStageIndex];
   const canAct =
-    accessRequest.status === 'Pending Approval' &&
+    (accessRequest.status === 'Pending Approval' ||
+      accessRequest.status === 'Pending' ||
+      accessRequest.status === 'Under Review') &&
     currentStage &&
     (currentStage.assignedApproverId === currentUser.id ||
       currentUser.roles.includes(currentStage.roleOrPosition as any) ||
       currentUser.roles.includes('Super Admin'));
 
   const canRevoke =
-    accessRequest.status === 'Approved' &&
+    (accessRequest.status === 'Approved' || accessRequest.status === 'Fulfilled') &&
     (currentUser.roles.includes('Super Admin') ||
       currentUser.roles.includes('Department Lead') ||
       currentUser.roles.includes('Operation Manager'));

@@ -1021,6 +1021,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setAccessAssignments((prev) => [newAsgn, ...prev]);
 
+    // Keep account capacity and active user lists synchronized
+    if (acc) {
+      setAccounts((prev) =>
+        prev.map((a) => {
+          if (a.id === acc.id) {
+            const nextSeats = (a.allocatedSeats || 0) + 1;
+            const isFull = a.seatLimit ? nextSeats >= a.seatLimit : false;
+            const newSharedIds =
+              data.recipientType === 'employee' && !a.sharedUserIds?.includes(data.recipientId)
+                ? [...(a.sharedUserIds || []), data.recipientId]
+                : a.sharedUserIds || [];
+            const newSharedNames =
+              data.recipientType === 'employee' && !a.sharedUserNames?.includes(recipientName)
+                ? [...(a.sharedUserNames || []), recipientName]
+                : a.sharedUserNames || [];
+            return {
+              ...a,
+              allocatedSeats: nextSeats,
+              accountStatus: isFull ? 'Assigned' : 'Partially Assigned',
+              sharedUserIds: newSharedIds,
+              sharedUserNames: newSharedNames,
+            };
+          }
+          return a;
+        })
+      );
+    }
+
     // Dispatch email log (Zero credentials)
     if (recipientEmail) {
       const emailLog: EmailDeliveryLog = {
@@ -1104,6 +1132,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     if (target) {
+      // Synchronize account capacity and active user lists
+      setAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.id === target.accountId) {
+            const nextSeats = Math.max(0, (acc.allocatedSeats || 1) - 1);
+            const remainingSharedIds = (acc.sharedUserIds || []).filter((uid) => uid !== target.recipientId);
+            const remainingSharedNames = (acc.sharedUserNames || []).filter((uname) => uname !== target.recipientName);
+            const nextStatus =
+              nextSeats === 0
+                ? 'Available'
+                : acc.seatLimit && nextSeats >= acc.seatLimit
+                ? 'Assigned'
+                : 'Partially Assigned';
+            return {
+              ...acc,
+              allocatedSeats: nextSeats,
+              accountStatus: nextStatus,
+              sharedUserIds: remainingSharedIds,
+              sharedUserNames: remainingSharedNames,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return acc;
+        })
+      );
+
       const historyRecord: AccountAccessHistory = {
         id: `hist-${Date.now()}`,
         assignmentId: asgnId,
@@ -2005,14 +2059,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAccounts((prevAccounts) =>
         prevAccounts.map((acc) => {
           if (acc.id === targetReq.assignedAccountId) {
+            const nextSeats = Math.max(0, (acc.allocatedSeats || 1) - 1);
+            const remainingSharedIds = (acc.sharedUserIds || []).filter((id) => id !== targetReq.requesterId);
+            const remainingSharedNames = (acc.sharedUserNames || []).filter((name) => name !== targetReq.requesterName);
+            const nextStatus =
+              nextSeats === 0
+                ? 'Available'
+                : acc.seatLimit && nextSeats >= acc.seatLimit
+                ? 'Assigned'
+                : 'Partially Assigned';
             return {
               ...acc,
-              sharedUserIds: (acc.sharedUserIds || []).filter((id) => id !== targetReq.requesterId),
-              sharedUserNames: (acc.sharedUserNames || []).filter((name) => name !== targetReq.requesterName),
+              allocatedSeats: nextSeats,
+              accountStatus: nextStatus,
+              sharedUserIds: remainingSharedIds,
+              sharedUserNames: remainingSharedNames,
               updatedAt: new Date().toISOString(),
             };
           }
           return acc;
+        })
+      );
+
+      // Revoke any active access assignments for this request
+      setAccessAssignments((prev) =>
+        prev.map((asgn) => {
+          if (
+            asgn.accountId === targetReq.assignedAccountId &&
+            asgn.recipientId === targetReq.requesterId &&
+            asgn.status === 'Active'
+          ) {
+            return {
+              ...asgn,
+              status: 'Revoked',
+              notes: `${asgn.notes ? asgn.notes + ' | ' : ''}Revoked via Access Request: ${reason}`,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return asgn;
         })
       );
     }
@@ -2033,7 +2117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       message: `Your access to ${targetReq.serviceName} (${targetReq.assignedAccountEmail || 'Tool Account'}) has been revoked by ${currentUser.name}. Reason: ${reason}`,
       type: 'requisition',
       recipientId: targetReq.requesterId,
-      linkAction: { view: 'requisitions', id: targetReq.id },
+      linkAction: { view: 'request-tools', id: targetReq.id },
     });
 
     addAuditLog({
@@ -2412,7 +2496,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         'Content-Type': 'application/json',
         'x-user-id': currentUser?.id || 'usr-admin',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        ...data,
+        departmentName: dept?.name || 'Unassigned',
+        teamName: team?.name || undefined,
+      }),
     })
       .then(async (res) => {
         if (res.ok) {
