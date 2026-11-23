@@ -198,9 +198,15 @@ export const EmployeeTableView: React.FC = () => {
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesName = u.name.toLowerCase().includes(q);
-        const matchesEmail = u.email.toLowerCase().includes(q);
+        const matchesEmail =
+          u.email.toLowerCase().includes(q) ||
+          (u.originalEmail && u.originalEmail.toLowerCase().includes(q)) ||
+          (u.mainEmail && u.mainEmail.toLowerCase().includes(q));
         const matchesDesig = u.designation.toLowerCase().includes(q);
-        if (!matchesName && !matchesEmail && !matchesDesig) return false;
+        const matchesId =
+          u.id.toLowerCase().includes(q) ||
+          (u.originalId && u.originalId.toLowerCase().includes(q));
+        if (!matchesName && !matchesEmail && !matchesDesig && !matchesId) return false;
       }
 
       // Department filter
@@ -611,16 +617,26 @@ export const EmployeeTableView: React.FC = () => {
                       {/* Employee Cell */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#EA5400] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                          <div className={`w-8 h-8 rounded-full ${emp.isAnonymized ? 'bg-slate-400' : 'bg-[#EA5400]'} text-white flex items-center justify-center font-bold text-[11px] shrink-0`}>
                             {getInitials(emp.name)}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                              {emp.name}
+                            <div className="font-semibold text-slate-900 dark:text-slate-100 truncate flex items-center gap-1.5">
+                              <span>{emp.name}</span>
+                              {emp.isAnonymized && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium border border-slate-200 dark:border-slate-700">
+                                  Anonymized
+                                </span>
+                              )}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono">
                               {emp.email}
                             </div>
+                            {emp.originalEmail && (
+                              <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate" title={`Original Main Email: ${emp.originalEmail}`}>
+                                Main: <span className="font-medium text-slate-600 dark:text-slate-300">{emp.originalEmail}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -733,13 +749,13 @@ export const EmployeeTableView: React.FC = () => {
                               )}
                             </button>
 
-                            {/* Remove Employee */}
-                            {emp.id !== 'usr-admin' && emp.id !== currentUser?.id && (
+                            {/* Remove / Anonymize Employee */}
+                            {emp.id !== 'usr-admin' && emp.id !== currentUser?.id && !emp.isAnonymized && (
                               <button
                                 type="button"
                                 onClick={() => setRemovingUser(emp)}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors cursor-pointer"
-                                title="Remove Employee"
+                                title="Remove / Anonymize Employee"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -1070,10 +1086,10 @@ export const EmployeeTableView: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Remove Employee from Organization?
+                  Remove & Anonymize Employee?
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Permanent removal &bull; Access revocation
+                  Data Preservation &bull; Anonymization & Archive
                 </p>
               </div>
             </div>
@@ -1088,9 +1104,10 @@ export const EmployeeTableView: React.FC = () => {
               <div><strong className="text-slate-700 dark:text-slate-200">Assigned Roles:</strong> {removingUser.roles.join(', ')}</div>
             </div>
 
-            <p className="text-[11px] text-rose-600 dark:text-rose-400 leading-relaxed">
-              <strong>Warning:</strong> All assigned licenses, access delegations, and permissions will be automatically revoked. This action cannot be undone.
-            </p>
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed space-y-1">
+              <strong className="font-semibold block">Report & History Protection:</strong>
+              <span>To ensure audit trails, historical requisitions, and financial reports have no data loss, an anonymous unique ID and email will be assigned. The original email will remain searchable and identifiable.</span>
+            </div>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
@@ -1115,7 +1132,7 @@ export const EmployeeTableView: React.FC = () => {
                 ) : (
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Yes, Remove Employee</span>
+                    <span>Yes, Remove & Anonymize</span>
                   </>
                 )}
               </button>

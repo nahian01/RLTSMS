@@ -753,9 +753,20 @@ test('Employee Management: Resend Invitation, Change Password, and Remove Employ
   assert.strictEqual(delEmpRes.status, 200, 'Removing employee by admin must succeed');
   assert.strictEqual(delEmpRes.data.success, true);
 
-  // Verify user is gone from store
-  const targetInStore = dbStore.getState().users.find((u) => u.id === empId);
-  assert.strictEqual(targetInStore, undefined, 'Employee must be removed from store');
+  // Verify old ID is no longer active and employee record is preserved with anonymous ID to protect reports
+  const targetWithOldId = dbStore.getState().users.find((u) => u.id === empId);
+  assert.strictEqual(targetWithOldId, undefined, 'Old ID must no longer be the active user ID');
+
+  const anonymizedUser = dbStore.getState().users.find(
+    (u) => u.originalId === empId || u.id === delEmpRes.data.anonymousId
+  );
+  assert.ok(anonymizedUser, 'Employee data must be preserved in store to prevent reporting gaps');
+  assert.strictEqual(anonymizedUser.isAnonymized, true);
+  assert.strictEqual(anonymizedUser.accountStatus, 'Inactive');
+  assert.ok(anonymizedUser.id.startsWith('anon-usr-'), 'Anonymous ID must become the main ID');
+  assert.ok(anonymizedUser.email.startsWith('anonymous-'), 'Anonymous email must be assigned');
+  assert.strictEqual(anonymizedUser.originalEmail, 'tanvir.test@riseuplabs.com', 'Original email must be retained for identification');
+  assert.strictEqual(anonymizedUser.name, 'Tanvir Hossain', 'Employee name and details must be kept intact');
 });
 
 test('Employee Onboarding: Token Verification, Password Setup, Account Activation, and Direct Login', async () => {

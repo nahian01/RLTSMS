@@ -252,7 +252,7 @@ interface AppContextType {
   updateTeam: (id: string, data: Partial<Team>) => Promise<Team | null>;
   deleteTeam: (id: string) => Promise<{ success: boolean; message: string; unassignedEmployeesCount?: number }>;
   updateEmployee: (userId: string, data: Partial<User>) => Promise<User | null>;
-  deleteEmployee: (userId: string) => Promise<{ success: boolean; message: string; error?: string }>;
+  deleteEmployee: (userId: string) => Promise<{ success: boolean; message: string; error?: string; anonymousId?: string }>;
   changeEmployeePassword: (userId: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   verifyActivationToken: (token: string) => Promise<{
     valid: boolean;
@@ -2732,7 +2732,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return updated;
   };
 
-  const deleteEmployee = async (userId: string): Promise<{ success: boolean; message: string; error?: string }> => {
+  const deleteEmployee = async (userId: string): Promise<{ success: boolean; message: string; error?: string; anonymousId?: string }> => {
     if (userId === 'usr-admin') {
       return { success: false, message: 'The primary system administrator account cannot be deleted.', error: 'Cannot delete primary admin' };
     }
@@ -2745,19 +2745,107 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Employee not found.', error: 'Not found' };
     }
 
-    // Call backend API
-    fetch(`/api/org/users/${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': currentUser.id,
-      },
-    }).catch((err) => {
-      console.warn('Backend employee delete failed, updating local state:', err);
-    });
+    const timestamp = Date.now().toString(36);
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    let anonymousId = `anon-usr-${timestamp}-${randomSuffix}`;
+    let anonymousEmail = `anonymous-${timestamp}-${randomSuffix}@riseuplabs.com`;
+    const originalEmail = target.originalEmail || target.email;
+    const originalId = target.originalId || userId;
 
-    // Cascade local updates: remove from users
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    // Call backend API
+    try {
+      const res = await fetch(`/api/org/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': currentUser.id,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.anonymousId) anonymousId = data.anonymousId;
+        if (data.anonymousEmail) anonymousEmail = data.anonymousEmail;
+      }
+    } catch (err) {
+      console.warn('Backend employee delete failed, updating local state:', err);
+    }
+
+    // Preserve employee record: assign anonymous ID as main ID, keep main email, mark Inactive & Anonymized
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          return {
+            ...u,
+            id: anonymousId,
+            originalId,
+            email: anonymousEmail,
+            originalEmail,
+            mainEmail: originalEmail,
+            accountStatus: 'Inactive' as const,
+            isAnonymized: true,
+            anonymizedAt: new Date().toISOString(),
+            invitationToken: undefined,
+          };
+        }
+        return u.reportingLeadId === userId
+          ? { ...u, reportingLeadId: undefined, reportingLeadName: undefined }
+          : u;
+      })
+    );
+
+    // Re-link requisitions to anonymous ID to prevent report gaps
+    setRequisitions((prev) =>
+      prev.map((r) => {
+        let changed = false;
+        let newReq = { ...r };
+        if (newReq.requesterId === userId) {
+          newReq.requesterId = anonymousId;
+          changed = true;
+        }
+        if (newReq.stages.some((s) => s.assignedApproverId === userId)) {
+          newReq.stages = newReq.stages.map((s) =>
+            s.assignedApproverId === userId ? { ...s, assignedApproverId: anonymousId } : s
+          );
+          changed = true;
+        }
+        return changed ? newReq : r;
+      })
+    );
+
+    // Re-link access requests to anonymous ID
+    setAccessRequests((prev) =>
+      prev.map((ar) =>
+        ar.requesterId === userId
+          ? { ...ar, requesterId: anonymousId }
+          : ar
+      )
+    );
+
+    // Re-link access assignments to anonymous ID
+    setAccessAssignments((prev) =>
+      prev.map((aa) =>
+        aa.recipientId === userId ? { ...aa, recipientId: anonymousId } : aa
+      )
+    );
+
+    // Re-link payment cards
+    setCards((prev) =>
+      prev.map((c) => {
+        let changed = false;
+        let newCard = { ...c };
+        if (newCard.ownerId === userId) {
+          newCard.ownerId = anonymousId;
+          changed = true;
+        }
+        if (newCard.authorizedUserIds.includes(userId)) {
+          newCard.authorizedUserIds = newCard.authorizedUserIds.map((uid) =>
+            uid === userId ? anonymousId : uid
+          );
+          changed = true;
+        }
+        return changed ? newCard : c;
+      })
+    );
 
     // Unassign if lead in any departments
     setDepartments((prev) =>
@@ -2783,13 +2871,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     addAuditLog({
-      action: 'EMPLOYEE_DELETED',
+      action: 'EMPLOYEE_ANONYMIZED_AND_ARCHIVED',
       entity: 'User',
-      entityId: userId,
-      details: `Removed employee account for ${target.name} (${target.email}) from the organization.`,
+      entityId: anonymousId,
+      details: `Removed employee account for ${target.name}. Main ID assigned: ${anonymousId}, anonymous email: ${anonymousEmail}. Retained original email (${originalEmail}) and preserved historical reporting records.`,
     });
 
-    return { success: true, message: `Employee ${target.name} has been removed successfully.` };
+    return {
+      success: true,
+      message: `Employee ${target.name} has been anonymized and removed. Main ID updated to ${anonymousId}, original email (${originalEmail}) preserved for search and reports.`,
+      anonymousId,
+    };
   };
 
   const changeEmployeePassword = async (

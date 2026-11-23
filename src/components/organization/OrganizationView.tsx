@@ -261,11 +261,16 @@ export const OrganizationView: React.FC = () => {
   const filteredUsers = useMemo(() => {
     return registeredUsers.filter((u) => {
       // Search filter
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
         searchQuery === '' ||
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.designation.toLowerCase().includes(searchQuery.toLowerCase());
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.originalEmail && u.originalEmail.toLowerCase().includes(q)) ||
+        (u.mainEmail && u.mainEmail.toLowerCase().includes(q)) ||
+        u.designation.toLowerCase().includes(q) ||
+        u.id.toLowerCase().includes(q) ||
+        (u.originalId && u.originalId.toLowerCase().includes(q));
 
       // Department filter
       const matchesDept = departmentFilter === 'all' || u.departmentId === departmentFilter;
@@ -937,10 +942,18 @@ export const OrganizationView: React.FC = () => {
                                 {u.name.charAt(0)}
                               </div>
                               <div>
-                                <div className="font-semibold text-slate-900 dark:text-white">
-                                  {u.name}
+                                <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                  <span>{u.name}</span>
+                                  {u.isAnonymized && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400">
+                                      Anonymized
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-[11px] text-slate-400 font-mono">{u.email}</div>
+                                {u.originalEmail && (
+                                  <div className="text-[10px] text-slate-500">Main: {u.originalEmail}</div>
+                                )}
                               </div>
                             </div>
                           </td>

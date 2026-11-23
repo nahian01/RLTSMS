@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { INITIAL_ROLES, INITIAL_WORKFLOWS, INITIAL_PERMISSIONS, INITIAL_ACCOUNTS } from '../src/data/mockData';
-import { ApprovalWorkflow, WorkflowStageDefinition, UserRole } from '../src/types';
+import { ApprovalWorkflow, WorkflowStageDefinition, UserRole, User } from '../src/types';
 
 // Helper matching AppContext hasPermission
 function checkUserPermission(userRoles: UserRole[], permissionCode: string): boolean {
@@ -334,4 +334,103 @@ test('Requisition Approvals: Full details accessibility for approvers before dec
   assert.strictEqual(sampleRequisition.stages.length, 1);
   assert.strictEqual(sampleRequisition.stages[0].status, 'Pending');
 });
+
+test('Employee Removal & Anonymization: Preserves data, assigns anonymous ID as main ID, and retains original email for reports and search', () => {
+  // Setup sample employee with historical requisitions
+  const oldUserId = 'usr-sarah-test';
+  let sampleUsers: User[] = [
+    {
+      id: oldUserId,
+      name: 'Sarah Lin',
+      email: 'sarah.lin@riseuplabs.com',
+      phone: '+880 1711-223344',
+      designation: 'Staff AI Engineer',
+      departmentId: 'dept-eng',
+      departmentName: 'Engineering',
+      roles: ['Team Lead', 'Employee'],
+      accountStatus: 'Active',
+    },
+  ];
+
+  let sampleRequisitions = [
+    {
+      id: 'req-hist-1',
+      requesterId: oldUserId,
+      requesterName: 'Sarah Lin',
+      serviceName: 'OpenAI Enterprise',
+      departmentName: 'Engineering',
+      estimatedAmount: 3600,
+    },
+  ];
+
+  // Anonymization simulation matching AppContext and backend
+  const timestamp = Date.now().toString(36);
+  const randomSuffix = 'test1';
+  const anonymousId = `anon-usr-${timestamp}-${randomSuffix}`;
+  const anonymousEmail = `anonymous-${timestamp}-${randomSuffix}@riseuplabs.com`;
+  const originalEmail = sampleUsers[0].email;
+
+  // Perform anonymization
+  sampleUsers = sampleUsers.map((u) => {
+    if (u.id === oldUserId) {
+      return {
+        ...u,
+        id: anonymousId,
+        originalId: oldUserId,
+        email: anonymousEmail,
+        originalEmail,
+        mainEmail: originalEmail,
+        accountStatus: 'Inactive' as const,
+        isAnonymized: true,
+        anonymizedAt: new Date().toISOString(),
+      };
+    }
+    return u;
+  });
+
+  // Re-link requisitions to anonymous ID to prevent report gap
+  sampleRequisitions = sampleRequisitions.map((r) =>
+    r.requesterId === oldUserId ? { ...r, requesterId: anonymousId } : r
+  );
+
+  // 1. Employee data is preserved (NOT deleted)
+  assert.strictEqual(sampleUsers.length, 1);
+  const employee = sampleUsers[0];
+
+  // 2. Anonymous ID became main ID
+  assert.strictEqual(employee.id, anonymousId);
+  assert.strictEqual(employee.originalId, oldUserId);
+
+  // 3. Anonymous email assigned, but original email retained
+  assert.strictEqual(employee.email, anonymousEmail);
+  assert.strictEqual(employee.originalEmail, 'sarah.lin@riseuplabs.com');
+  assert.strictEqual(employee.mainEmail, 'sarah.lin@riseuplabs.com');
+
+  // 4. Other information preserved for reports
+  assert.strictEqual(employee.name, 'Sarah Lin');
+  assert.strictEqual(employee.departmentName, 'Engineering');
+  assert.strictEqual(employee.designation, 'Staff AI Engineer');
+  assert.strictEqual(employee.accountStatus, 'Inactive');
+  assert.strictEqual(employee.isAnonymized, true);
+
+  // 5. Requisitions re-linked without gaps or orphaned records
+  assert.strictEqual(sampleRequisitions[0].requesterId, anonymousId);
+  assert.strictEqual(sampleRequisitions[0].estimatedAmount, 3600);
+
+  // 6. Search matching: searchable by both original email and new anonymous email
+  const searchByOriginalEmail = sampleUsers.filter(
+    (u) =>
+      u.email.toLowerCase().includes('sarah.lin') ||
+      (u.originalEmail && u.originalEmail.toLowerCase().includes('sarah.lin'))
+  );
+  assert.strictEqual(searchByOriginalEmail.length, 1);
+
+  const searchByAnonEmail = sampleUsers.filter(
+    (u) =>
+      u.email.toLowerCase().includes(anonymousEmail.toLowerCase()) ||
+      (u.originalEmail && u.originalEmail.toLowerCase().includes(anonymousEmail.toLowerCase()))
+  );
+  assert.strictEqual(searchByAnonEmail.length, 1);
+});
+
 

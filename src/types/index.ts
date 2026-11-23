@@ -37,6 +37,11 @@ export interface User {
   invitationToken?: string;
   cardPermissionLevel?: CardPermissionLevel;
   avatar?: string;
+  isAnonymized?: boolean;
+  originalId?: string;
+  originalEmail?: string;
+  mainEmail?: string;
+  anonymizedAt?: string;
 }
 
 export interface RoleDefinition {

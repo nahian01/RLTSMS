@@ -91,7 +91,9 @@ export const RBACView: React.FC = () => {
   const filteredUsers = useMemo(() =>
     registeredUsers.filter((u) =>
       u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase())
+      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.originalEmail && u.originalEmail.toLowerCase().includes(userSearch.toLowerCase())) ||
+      (u.mainEmail && u.mainEmail.toLowerCase().includes(userSearch.toLowerCase()))
     ),
     [registeredUsers, userSearch]
   );

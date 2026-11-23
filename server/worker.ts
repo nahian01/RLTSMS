@@ -563,16 +563,24 @@ export default {
       }
     }
 
-    // Remove Employee Endpoint
+    // Remove & Anonymize Employee Endpoint
     const deleteMatch = url.pathname.match(/^\/api\/org\/users\/([^/]+)$/);
     if (deleteMatch && request.method === 'DELETE') {
       const id = deleteMatch[1];
       if (id === 'usr-admin') {
         return jsonResponse({ error: 'The primary system administrator account cannot be deleted.' }, 403);
       }
+
+      const timestamp = Date.now().toString(36);
+      const randomPart = Math.random().toString(36).substring(2, 7);
+      const anonymousId = `anon-usr-${timestamp}-${randomPart}`;
+      const anonymousEmail = `anonymous-${timestamp}-${randomPart}@riseuplabs.com`;
+
       return jsonResponse({
         success: true,
-        message: 'Employee removed successfully.',
+        message: 'Employee removed and anonymized successfully. Records preserved for reports.',
+        anonymousId,
+        anonymousEmail,
       });
     }
 

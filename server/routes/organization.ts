@@ -177,7 +177,7 @@ orgRouter.post('/users/:id/resend', async (req: Request, res: Response) => {
   });
 });
 
-// DELETE /api/org/users/:id - Remove employee
+// DELETE /api/org/users/:id - Remove & anonymize employee (preserve historical report integrity)
 orgRouter.delete('/users/:id', (req: Request, res: Response) => {
   const currentUserId = (req.headers['x-user-id'] as string) || 'usr-admin';
   const { id } = req.params;
@@ -198,11 +198,95 @@ orgRouter.delete('/users/:id', (req: Request, res: Response) => {
 
   const currentUser = state.users.find((u) => u.id === currentUserId);
 
-  dbStore.mutate((s) => {
-    // Remove user
-    s.users = s.users.filter((u) => u.id !== id);
+  // Generate unique anonymous ID and anonymous email
+  const timestamp = Date.now().toString(36);
+  const randomSuffix = Math.random().toString(36).substring(2, 7);
+  const anonymousId = `anon-usr-${timestamp}-${randomSuffix}`;
+  const anonymousEmail = `anonymous-${timestamp}-${randomSuffix}@riseuplabs.com`;
+  const originalEmail = targetUser.originalEmail || targetUser.email;
+  const originalId = targetUser.originalId || id;
 
-    // Unassign lead roles if any
+  dbStore.mutate((s) => {
+    // Preserve employee record: assign anonymous ID as main ID, assign anonymous email, keep original email and report metadata
+    const userIdx = s.users.findIndex((u) => u.id === id);
+    if (userIdx !== -1) {
+      const existing = s.users[userIdx];
+      s.users[userIdx] = {
+        ...existing,
+        id: anonymousId,                     // Anonymous ID becomes main ID
+        originalId,                          // Preserve original ID
+        email: anonymousEmail,               // Anonymous email assigned
+        originalEmail,                       // Keep user's main email so it's searchable and identifiable
+        mainEmail: originalEmail,            // Alias for convenience
+        accountStatus: 'Inactive',           // Deactivated
+        isAnonymized: true,
+        anonymizedAt: new Date().toISOString(),
+        passwordHash: 'DISABLED_ANONYMIZED_ACCOUNT', // Invalidate credentials
+        invitationToken: undefined,
+      };
+    }
+
+    // Re-link requisitions to anonymous ID to prevent report gaps
+    if (Array.isArray(s.requisitions)) {
+      s.requisitions.forEach((req) => {
+        if (req.requesterId === id) req.requesterId = anonymousId;
+        if (Array.isArray(req.stages)) {
+          req.stages.forEach((stg) => {
+            if (stg.assignedApproverId === id) stg.assignedApproverId = anonymousId;
+          });
+        }
+      });
+    }
+
+    // Re-link access requests
+    if (Array.isArray(s.accessRequests)) {
+      s.accessRequests.forEach((ar) => {
+        if (ar.requesterId === id) ar.requesterId = anonymousId;
+        if (Array.isArray(ar.stages)) {
+          ar.stages.forEach((stg) => {
+            if (stg.assignedApproverId === id) stg.assignedApproverId = anonymousId;
+          });
+        }
+      });
+    }
+
+    // Re-link access assignments
+    if (Array.isArray(s.accessAssignments)) {
+      s.accessAssignments.forEach((aa) => {
+        if (aa.recipientId === id) aa.recipientId = anonymousId;
+        if (aa.grantedById === id) aa.grantedById = anonymousId;
+      });
+    }
+
+    // Re-link purchases
+    if (Array.isArray(s.purchases)) {
+      s.purchases.forEach((p) => {
+        if ((p as any).requesterId === id) (p as any).requesterId = anonymousId;
+        if ((p as any).purchaserId === id) (p as any).purchaserId = anonymousId;
+      });
+    }
+
+    // Re-link audit logs
+    if (Array.isArray(s.auditLogs)) {
+      s.auditLogs.forEach((al) => {
+        if (al.userId === id) al.userId = anonymousId;
+        if (al.entityId === id) al.entityId = anonymousId;
+      });
+    }
+
+    // Re-link payment cards
+    if (Array.isArray(s.cards)) {
+      s.cards.forEach((card) => {
+        if (card.ownerId === id) card.ownerId = anonymousId;
+        if (Array.isArray(card.authorizedUserIds)) {
+          card.authorizedUserIds = card.authorizedUserIds.map((uid) =>
+            uid === id ? anonymousId : uid
+          );
+        }
+      });
+    }
+
+    // Unassign lead roles from active departments
     s.departments.forEach((dept) => {
       if (dept.leadId === id) {
         dept.leadId = undefined;
@@ -210,10 +294,19 @@ orgRouter.delete('/users/:id', (req: Request, res: Response) => {
       }
     });
 
+    // Unassign lead roles from active teams
     s.teams.forEach((t) => {
       if (t.leadId === id) {
         t.leadId = undefined;
         t.leadName = undefined;
+      }
+    });
+
+    // Unassign reporting lead for other users
+    s.users.forEach((u) => {
+      if (u.reportingLeadId === id) {
+        u.reportingLeadId = undefined;
+        u.reportingLeadName = undefined;
       }
     });
 
@@ -227,16 +320,19 @@ orgRouter.delete('/users/:id', (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       userId: currentUserId,
       userName: currentUser ? currentUser.name : 'System Admin',
-      action: 'Delete Employee Account',
+      action: 'Anonymize & Archive Employee',
       entity: 'Organization',
-      entityId: id,
-      details: `Removed employee account for ${targetUser.name} (${targetUser.email}). Revoked associated assignments.`,
+      entityId: anonymousId,
+      details: `Removed employee account for ${targetUser.name}. Assigned anonymous ID ${anonymousId} and anonymous email ${anonymousEmail}. Retained original email (${originalEmail}) and historical reporting records.`,
     });
   });
 
   return res.json({
     success: true,
-    message: `Employee ${targetUser.name} was successfully removed from the organization.`,
+    message: `Employee ${targetUser.name} was successfully removed and anonymized. Records preserved with main ID ${anonymousId} and identifiable main email ${originalEmail}.`,
+    anonymousId,
+    anonymousEmail,
+    originalEmail,
   });
 });
 
